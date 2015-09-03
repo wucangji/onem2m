@@ -1,0 +1,30 @@
+{
+  "name": "dslink-java-onem2m",
+  "version": "0.0.1",
+  "description": "An integration for oneM2M.",
+  "configs": {
+    "name": {
+      "type": "string",
+      "default": "onem2m"
+    },
+    "broker": {
+      "type": "url"
+    },
+    "nodes": {
+      "type": "path",
+      "default": "nodes.json"
+    },
+    "key": {
+      "type": "path",
+      "default": ".key"
+    },
+    "log": {
+      "type": "enum",
+      "default": "info"
+    },
+    "handler_class": {
+      "type": "string",
+      "default": "org.dsa.iot.onem2m.Main"
+    }
+  }
+}

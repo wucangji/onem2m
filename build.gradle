@@ -1,0 +1,46 @@
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'findbugs'
+
+version '0.0.1'
+
+mainClassName = 'org.dsa.iot.onem2m.Main'
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
+}
+
+dependencies {
+    compile 'org.iot-dsa:commons:0.9.0-SNAPSHOT'
+    compile 'org.iot-dsa:dslink:0.9.0-SNAPSHOT'
+    compile fileTree('external')
+
+    // onem2m dependencies
+    compile 'com.google.code.gson:gson:2.2.4'
+    compile 'org.eclipse.jetty.aggregate:jetty-all-server:8.1.17.v20150415'
+    compile 'org.apache.commons:commons-io:1.3.2'
+    compile 'org.eclipse.californium:californium-core:1.0.0-M3'
+    compile 'joda-time:joda-time:2.7'
+    compile 'com.sun.jersey:jersey-json:1.17'
+    compile 'commons-codec:commons-codec:1.9'
+    compile 'org.apache.httpcomponents:httpclient:4.3.5'
+}
+
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+run {
+    args System.getProperty("exec.args", "").split()
+    workingDir project.buildDir
+}
+
+applicationDistribution.from new File(project.projectDir, "/dslink.json")
