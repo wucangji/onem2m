@@ -36,7 +36,7 @@ public class BaseCSE {
         this.server = server;
         this.parent = parent;
     }
-    
+
     private void init() {
         {
             NodeBuilder b = parent.createChild("deleteCSE");
@@ -76,12 +76,33 @@ public class BaseCSE {
         handleResponse(send(exchange));
     }
 
+    private void buildTreeForThisNode(String to, Node node) {
+        RequestPrimitive primitive = new RequestPrimitive();
+        primitive.setOperation(OneM2M.Operation.RETRIEVE.value());
+        primitive.setFrom("dslink");
+        primitive.setTo(to);
+        primitive.setRequestIdentifier("12345");
+
+        Exchange exchange = server.createExchange(primitive);
+        handleResponseForThisNode(send(exchange), node);
+    }
     private synchronized String send(Exchange exchange) {
         Http http = new Http();
         http.start();
         http.send(exchange);
         http.stop();
         return exchange.getClient().toString();
+    }
+
+    private void handleResponseForThisNode(String response, Node node) {
+        JsonObject json = new JsonObject(response);
+        Object object = json.getField("responsePayload");
+        if (object instanceof JsonObject) {
+            handlePayloadForThisNode((JsonObject) object, node);
+        } else {
+            String clazz = object.getClass().getName();
+            throw new RuntimeException("Unsupported instance: " + clazz);
+        }
     }
 
     private void handleResponse(String response) {
@@ -103,15 +124,34 @@ public class BaseCSE {
         }
     }
 
-    private void handlePayload(final JsonObject payload) {
+    private void handlePayloadForThisNode(final JsonObject payload, Node node) {
         if (payload == null) {
             return;
         }
         String rn = payload.getString("rn");
+
+        System.out.println("parent:" + parent.getName());
+        System.out.println("rn1:" + rn);
         if (rn == null) {
             return;
         }
+
+        handleTreeFields(payload, node);
+
+    }
+
+    private void handlePayload(final JsonObject payload) {
+        if (payload == null) {
+            return;
+        }
+        String rn = payload.getString("val");
+        if (rn == null) {
+            //rn = payload.getString("pi") + "/" + payload.getString("rn");
+            handleTreeFields(payload, parent);
+            return;
+        }
         rn = rn.substring(parent.getName().length() + 1);
+        System.out.println("rn:" + rn);
         if (rn.isEmpty()) {
             handleTreeFields(payload, parent);
             return;
@@ -127,9 +167,9 @@ public class BaseCSE {
             b.getListener().setOnListHandler(new Handler<Node>() {
                 @Override
                 public void handle(Node event) {
-                    Node node = event.getChild("rn");
+                    Node node = event.getChild("val");
                     if (node == null) {
-                        node = event.getParent().getChild("rn");
+                        node = event.getParent().getChild("val");
                         if (node == null) {
                             return;
                         }
@@ -138,7 +178,7 @@ public class BaseCSE {
                     Objects.getDaemonThreadPool().execute(new Runnable() {
                         @Override
                         public void run() {
-                            buildTree(rnNode.getValue().toString());
+                            buildTreeForThisNode(rnNode.getValue().toString(), event);
                         }
                     });
                 }
