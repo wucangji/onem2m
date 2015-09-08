@@ -3,6 +3,9 @@ package org.dsa.iot.onem2m.server;
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.NodeBuilder;
 import org.dsa.iot.dslink.node.NodeManager;
+import org.dsa.iot.dslink.node.Permission;
+import org.dsa.iot.dslink.node.actions.Action;
+import org.dsa.iot.dslink.node.actions.ActionResult;
 import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.dslink.node.value.ValueUtils;
@@ -130,7 +133,6 @@ public class BaseCSE {
         }
         String rn = payload.getString("rn");
 
-        System.out.println("parent:" + parent.getName());
         System.out.println("rn1:" + rn);
         if (rn == null) {
             return;
@@ -165,20 +167,26 @@ public class BaseCSE {
             b = node.createChild(s);
             b.setSerializable(false);
             b.getListener().setOnListHandler(new Handler<Node>() {
+
+                // if it is a parent node, will this listener be triggered? how to get the same result as others?
                 @Override
                 public void handle(Node event) {
                     Node node = event.getChild("val");
+                    //System.out.println("val01:" + node);
                     if (node == null) {
                         node = event.getParent().getChild("val");
+                        //System.out.println("val02:" + node);
                         if (node == null) {
                             return;
                         }
                     }
                     final Node rnNode = node;
                     Objects.getDaemonThreadPool().execute(new Runnable() {
+                        // when will this be triggered?
                         @Override
                         public void run() {
-                            buildTreeForThisNode(rnNode.getValue().toString(), event);
+                            rnNode.clearChildren();
+                            buildTreeForThisNode(rnNode.getValue().toString(), rnNode);
                         }
                     });
                 }
@@ -186,6 +194,35 @@ public class BaseCSE {
         }
         node = b.build();
         handleTreeFields(payload, node);
+        int ty = payload.getNumber("typ").intValue();
+        if (ty == 3) {
+            // if this resource is a container.
+            b = node.createChild("Get Latest");
+            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+                @Override
+                public void handle(ActionResult event) {
+                    String latestURI = payload.getString("val") + "/latest";
+                    System.out.println("latestURI" + latestURI);
+                    Node latestNode = event.getNode().getParent().getChild("val");
+                    latestNode.clearChildren();
+                    buildTreeForThisNode(latestURI, latestNode);
+                }
+            }));
+            b.build();
+
+            b = node.createChild("Get Self");
+            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+                @Override
+                public void handle(ActionResult event) {
+                    String latestURI = payload.getString("val");
+                    System.out.println("latestURI" + latestURI);
+                    Node selfNode = event.getNode().getParent().getChild("val");
+                    selfNode.clearChildren();
+                    buildTreeForThisNode(latestURI, selfNode);
+                }
+            }));
+            b.build();
+        }
     }
 
     private void handleTreeFields(final JsonObject obj,
@@ -193,6 +230,8 @@ public class BaseCSE {
         if (obj == null) {
             return;
         }
+
+        //node.clearChildren();
         Map<String, Object> map = obj.toMap();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             String name = entry.getKey();
