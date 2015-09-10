@@ -101,7 +101,7 @@ public class BaseCSE {
                     }
                 }
                 //final String para = parameter;
-                buildTree(parent.getName() + "?" + parameter);
+                buildTree(parent.getName() + "?fu=1&rcn=5" + parameter);
             }
         });
     }
