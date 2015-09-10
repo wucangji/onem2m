@@ -1,5 +1,6 @@
 package org.dsa.iot.onem2m.server;
-
+import org.dsa.iot.dslink.node.actions.table.Row;
+import org.dsa.iot.onem2m.actions.resource.*;
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.NodeBuilder;
 import org.dsa.iot.dslink.node.NodeManager;
@@ -15,11 +16,14 @@ import org.dsa.iot.onem2m.actions.cse.DiscoverCSE;
 import org.opendaylight.iotdm.client.Exchange;
 import org.opendaylight.iotdm.client.impl.Http;
 import org.opendaylight.iotdm.constant.OneM2M;
+import org.opendaylight.iotdm.primitive.ContentInstance;
+import org.opendaylight.iotdm.primitive.PrimitiveContent;
 import org.opendaylight.iotdm.primitive.RequestPrimitive;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 
+import java.lang.reflect.Parameter;
 import java.util.Map;
 
 /**
@@ -63,6 +67,14 @@ public class BaseCSE {
         Objects.getDaemonThreadPool().execute(new Runnable() {
             @Override
             public void run() {
+                Map<String, Node> children = parent.getChildren();
+                if (children != null) {
+                    for (Node node : children.values()) {
+                        if (node.getAction() == null) {
+                            parent.removeChild(node);
+                        }
+                    }
+                }
                 buildTree(parent.getName() + "?fu=1&rcn=5");
             }
         });
@@ -94,6 +106,7 @@ public class BaseCSE {
         http.start();
         http.send(exchange);
         http.stop();
+        System.out.println(exchange.toString());
         return exchange.getClient().toString();
     }
 
@@ -171,6 +184,7 @@ public class BaseCSE {
                 // if it is a parent node, will this listener be triggered? how to get the same result as others?
                 @Override
                 public void handle(Node event) {
+                    System.out.println("Listed: " + event.getPath());
                     Node node = event.getChild("val");
                     //System.out.println("val01:" + node);
                     if (node == null) {
@@ -206,8 +220,11 @@ public class BaseCSE {
                     Node latestNode = event.getNode().getParent().getChild("val");
                     latestNode.clearChildren();
                     buildTreeForThisNode(latestURI, latestNode);
+                    System.out.println("lst : " + latestNode.getChild("con").getValue().toString());
+                    String lastCon = latestNode.getChild("con").getValue().toString();
+                    event.getTable().addRow(Row.make(new Value(lastCon)));
                 }
-            }));
+            }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest", ValueType.STRING)));
             b.build();
 
             b = node.createChild("Get Self");
@@ -222,6 +239,15 @@ public class BaseCSE {
                 }
             }));
             b.build();
+
+            {
+                b = node.createChild("Add ContentInstance");
+                b.setDisplayName("Add ContentInstance");
+                b.setSerializable(false);
+                b.setAction(AddContentInstance.make(this));
+                b.build();
+            }
+
         }
     }
 
@@ -258,4 +284,33 @@ public class BaseCSE {
         parent.setMetaData(cse);
         cse.init();
     }
+
+
+    public String createContentInstanceWithCon (String to, String con) {
+        RequestPrimitive primitive = new RequestPrimitive();
+        primitive.setOperation(OneM2M.Operation.CREATE.value());
+        primitive.setFrom("dslink");
+        primitive.setTo(to);
+        primitive.setRequestIdentifier("12345");
+        ContentInstance conIn = new ContentInstance();
+        conIn.setContent(con);
+
+        primitive.setPrimitiveContent(new PrimitiveContent());
+        primitive.getPrimitiveContent().getAny().add(conIn);
+
+        Exchange exchange = server.createExchange(primitive);
+        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+        // How to see them in the metrics?
+
+        Http http=new Http();
+        http.start();
+        http.setContentType(OneM2M.ResourceType.CONTENT_INSTANCE.value());
+        http.send(exchange);
+        http.stop();
+
+        System.out.println(exchange.toString());
+        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+    }
+
+
 }
