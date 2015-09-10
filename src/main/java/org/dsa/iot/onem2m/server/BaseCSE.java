@@ -1,5 +1,6 @@
 package org.dsa.iot.onem2m.server;
 import org.dsa.iot.dslink.node.actions.table.Row;
+import org.dsa.iot.onem2m.actions.cse.DiscoverCSEwithParameter;
 import org.dsa.iot.onem2m.actions.resource.*;
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.NodeBuilder;
@@ -59,6 +60,13 @@ public class BaseCSE {
             b.setAction(DiscoverCSE.make());
             b.build();
         }
+        {
+            NodeBuilder b = parent.createChild("discover2");
+            b.setDisplayName("Custom Discover");
+            b.setSerializable(false);
+            b.setAction(DiscoverCSEwithParameter.make());
+            b.build();
+        }
         // Perform an initial discovery
         discover();
     }
@@ -76,6 +84,24 @@ public class BaseCSE {
                     }
                 }
                 buildTree(parent.getName() + "?fu=1&rcn=5");
+            }
+        });
+    }
+
+    public void customeDiscover(final String parameter) {
+        Objects.getDaemonThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                Map<String, Node> children = parent.getChildren();
+                if (children != null) {
+                    for (Node node : children.values()) {
+                        if (node.getAction() == null) {
+                            parent.removeChild(node);
+                        }
+                    }
+                }
+                //final String para = parameter;
+                buildTree(parent.getName() + "?" + parameter);
             }
         });
     }
@@ -304,7 +330,7 @@ public class BaseCSE {
 
         Http http=new Http();
         http.start();
-        http.setContentType(OneM2M.ResourceType.CONTENT_INSTANCE.value());
+        http.setContentType(OneM2M.ResourceType.CONTAINER.value());
         http.send(exchange);
         http.stop();
 
