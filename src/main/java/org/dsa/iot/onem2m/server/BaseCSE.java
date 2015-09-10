@@ -330,8 +330,9 @@ public class BaseCSE {
 
         Http http=new Http();
         http.start();
-        http.setContentType(OneM2M.ResourceType.CONTAINER.value());
+        http.setContentType(OneM2M.ResourceType.CONTENT_INSTANCE.value());
         http.send(exchange);
+        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
         http.stop();
 
         System.out.println(exchange.toString());
