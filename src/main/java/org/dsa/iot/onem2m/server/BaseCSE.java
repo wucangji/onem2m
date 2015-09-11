@@ -17,6 +17,7 @@ import org.dsa.iot.onem2m.actions.cse.DiscoverCSE;
 import org.opendaylight.iotdm.client.Exchange;
 import org.opendaylight.iotdm.client.impl.Http;
 import org.opendaylight.iotdm.constant.OneM2M;
+import org.opendaylight.iotdm.primitive.Container;
 import org.opendaylight.iotdm.primitive.ContentInstance;
 import org.opendaylight.iotdm.primitive.PrimitiveContent;
 import org.opendaylight.iotdm.primitive.RequestPrimitive;
@@ -24,7 +25,8 @@ import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 
-import java.lang.reflect.Parameter;
+import java.lang.management.ManagementFactory;
+import com.sun.management.OperatingSystemMXBean;
 import java.util.Map;
 
 /**
@@ -33,7 +35,7 @@ import java.util.Map;
 public class BaseCSE {
 
     private final OneM2MServer server;
-    private final Node parent;
+    private final Node parent; // parent is the CSENode
 
     private BaseCSE(OneM2MServer server, Node parent) {
         if (server == null) {
@@ -68,7 +70,33 @@ public class BaseCSE {
             b.build();
         }
         // Perform an initial discovery
+
+        //createMemContainer(parent.getName());
         discover();
+        //addSystemMemoryToCSE(); // if use multithread, then will have address already use problem.
+    }
+
+    public void addSystemMemoryToCSE() {
+        Objects.getDaemonThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                // Create the container to store the memory information
+                createMemContainer(parent.getName());
+                addMemConInToCnt();
+            }
+        });
+    }
+
+    private void addMemConInToCnt() {
+        while (true) {
+            // how to write a live process?
+            String parentContainer = parent.getName() + "/SystemMemoryLeft";
+            OperatingSystemMXBean operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+            String restMem = operatingSystemMXBean.getFreePhysicalMemorySize() / 1000000 + " MB";
+            System.out.println("Rest Memory" + " = " + restMem);
+
+            createContentInstanceWithCon(parentContainer, restMem);
+        }
     }
 
     public void discover() {
@@ -132,7 +160,7 @@ public class BaseCSE {
         http.start();
         http.send(exchange);
         http.stop();
-        System.out.println(exchange.toString());
+        //System.out.println(exchange.toString());
         return exchange.getClient().toString();
     }
 
@@ -339,5 +367,33 @@ public class BaseCSE {
         return exchange.getResponsePrimitive().getResponseStatusCode().toString();
     }
 
+    public String createMemContainer (String to) {
+        RequestPrimitive primitive = new RequestPrimitive();
+        primitive.setOperation(OneM2M.Operation.CREATE.value());
+        primitive.setFrom("dslink");
+        primitive.setTo(to);
+        primitive.setRequestIdentifier("12345");
+        primitive.setName("SystemMemoryLeft");
+
+        Container cnt = new Container();
+        cnt.setOntologyRef("good");
+
+        primitive.setPrimitiveContent(new PrimitiveContent());
+        primitive.getPrimitiveContent().getAny().add(cnt);
+
+        Exchange exchange = server.createExchange(primitive);
+        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+        // How to see them in the metrics?
+
+        Http http=new Http();
+        http.start();
+        http.setContentType(OneM2M.ResourceType.CONTAINER.value());
+        http.send(exchange);
+        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
+        http.stop();
+
+        System.out.println(exchange.toString());
+        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+    }
 
 }
