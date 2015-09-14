@@ -69,8 +69,21 @@ public class BaseCSE {
             b.setAction(DiscoverCSEwithParameter.make());
             b.build();
         }
+        {
+            NodeBuilder b = parent.createChild("AddContainer");
+            b.setDisplayName("Add Container");
+            b.setSerializable(false);
+            b.setAction(AddContainer.make(this));
+            b.build();
+        }
+        {
+            NodeBuilder b = parent.createChild("addAE");
+            b.setDisplayName("Add an AE");
+            b.setSerializable(false);
+            b.setAction(AddContainer.make(this));
+            b.build();
+        }
         // Perform an initial discovery
-
         //createMemContainer(parent.getName());
         discover();
         //addSystemMemoryToCSE(); // if use multithread, then will have address already use problem.
@@ -81,7 +94,7 @@ public class BaseCSE {
             @Override
             public void run() {
                 // Create the container to store the memory information
-                createMemContainer(parent.getName());
+                createContainerwithName(parent.getName(), "MemContainer");
                 addMemConInToCnt();
             }
         });
@@ -217,6 +230,7 @@ public class BaseCSE {
         if (rn == null) {
             //rn = payload.getString("pi") + "/" + payload.getString("rn");
             handleTreeFields(payload, parent);
+            //createFunctionForCSE(parent, payload);
             return;
         }
         rn = rn.substring(parent.getName().length() + 1);
@@ -265,43 +279,104 @@ public class BaseCSE {
         int ty = payload.getNumber("typ").intValue();
         if (ty == 3) {
             // if this resource is a container.
-            b = node.createChild("Get Latest");
-            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
-                @Override
-                public void handle(ActionResult event) {
-                    String latestURI = payload.getString("val") + "/latest";
-                    System.out.println("latestURI" + latestURI);
-                    Node latestNode = event.getNode().getParent().getChild("val");
-                    latestNode.clearChildren();
-                    buildTreeForThisNode(latestURI, latestNode);
-                    System.out.println("lst : " + latestNode.getChild("con").getValue().toString());
-                    String lastCon = latestNode.getChild("con").getValue().toString();
-                    event.getTable().addRow(Row.make(new Value(lastCon)));
-                }
-            }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest", ValueType.STRING)));
-            b.build();
+            createFunctionForContainer(node,payload);
+        } else if (ty == 2) {
+            // if this resource is an AE
+            createFunctionForAE(node, payload);
+        }
+    }
 
-            b = node.createChild("Get Self");
-            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
-                @Override
-                public void handle(ActionResult event) {
-                    String latestURI = payload.getString("val");
-                    System.out.println("latestURI" + latestURI);
-                    Node selfNode = event.getNode().getParent().getChild("val");
-                    selfNode.clearChildren();
-                    buildTreeForThisNode(latestURI, selfNode);
-                }
-            }));
-            b.build();
+    public void createFunctionForCSE(Node node, final JsonObject payload) {
 
-            {
-                b = node.createChild("Add ContentInstance");
-                b.setDisplayName("Add ContentInstance");
-                b.setSerializable(false);
-                b.setAction(AddContentInstance.make(this));
-                b.build();
+        NodeBuilder b = node.createFakeBuilder();// what does this node builder do ?ß
+
+        {
+            b = node.createChild("AddContainer");
+            b.setDisplayName("Add Container");
+            b.setSerializable(false);
+            b.setAction(AddContainer.make(this));
+            b.build();
+        }
+        {
+            b = node.createChild("addAE");
+            b.setDisplayName("Add an AE");
+            b.setSerializable(false);
+            b.setAction(AddContainer.make(this));
+            b.build();
+        }
+    }
+
+    public void createFunctionForContainer(Node node, final JsonObject payload) {
+        // if this resource is a container.
+        NodeBuilder b = node.createFakeBuilder();// what does this node builder do ?
+        b = node.createChild("Get Latest");
+        b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+            @Override
+            public void handle(ActionResult event) {
+                String latestURI = payload.getString("val") + "/latest";
+                System.out.println("latestURI" + latestURI);
+                Node latestNode = event.getNode().getParent().getChild("val");
+                latestNode.clearChildren();
+                buildTreeForThisNode(latestURI, latestNode);
+                System.out.println("lst : " + latestNode.getChild("con").getValue().toString());
+                String lastCon = latestNode.getChild("con").getValue().toString();
+                event.getTable().addRow(Row.make(new Value(lastCon)));
             }
+        }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest", ValueType.STRING)));
+        b.build();
 
+        b = node.createChild("Get Self");
+        b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+            @Override
+            public void handle(ActionResult event) {
+                String latestURI = payload.getString("val");
+                System.out.println("latestURI" + latestURI);
+                Node selfNode = event.getNode().getParent().getChild("val");
+                selfNode.clearChildren();
+                buildTreeForThisNode(latestURI, selfNode);
+            }
+        }));
+        b.build();
+
+        {
+            b = node.createChild("AddContainer");
+            b.setDisplayName("Add Container");
+            b.setSerializable(false);
+            b.setAction(AddContainer.make(this));
+            b.build();
+        }
+        {
+            b = node.createChild("Add ContentInstance");
+            b.setDisplayName("Add ContentInstance");
+            b.setSerializable(false);
+            b.setAction(AddContentInstance.make(this));
+            b.build();
+        }
+    }
+
+    public void createFunctionForAE(Node node, final JsonObject payload) {
+        // if this resource is a container.
+        NodeBuilder b = node.createFakeBuilder();// what does this node builder do ?
+
+        b = node.createChild("Get Self");
+        b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+            @Override
+            public void handle(ActionResult event) {
+                String latestURI = payload.getString("val");
+                System.out.println("latestURI" + latestURI);
+                Node selfNode = event.getNode().getParent().getChild("val");
+                selfNode.clearChildren();
+                buildTreeForThisNode(latestURI, selfNode);
+            }
+        }));
+        b.build();
+
+        {
+            b = node.createChild("AddContainer");
+            b.setDisplayName("Add Container");
+            b.setSerializable(false);
+            b.setAction(AddContainer.make(this));
+            b.build();
         }
     }
 
@@ -367,13 +442,13 @@ public class BaseCSE {
         return exchange.getResponsePrimitive().getResponseStatusCode().toString();
     }
 
-    public String createMemContainer (String to) {
+    public String createContainerwithName (String to, String name) {
         RequestPrimitive primitive = new RequestPrimitive();
         primitive.setOperation(OneM2M.Operation.CREATE.value());
         primitive.setFrom("dslink");
         primitive.setTo(to);
         primitive.setRequestIdentifier("12345");
-        primitive.setName("SystemMemoryLeft");
+        primitive.setName(name);
 
         Container cnt = new Container();
         cnt.setOntologyRef("good");
