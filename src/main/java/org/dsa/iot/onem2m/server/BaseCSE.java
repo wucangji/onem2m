@@ -17,10 +17,7 @@ import org.dsa.iot.onem2m.actions.cse.DiscoverCSE;
 import org.opendaylight.iotdm.client.Exchange;
 import org.opendaylight.iotdm.client.impl.Http;
 import org.opendaylight.iotdm.constant.OneM2M;
-import org.opendaylight.iotdm.primitive.Container;
-import org.opendaylight.iotdm.primitive.ContentInstance;
-import org.opendaylight.iotdm.primitive.PrimitiveContent;
-import org.opendaylight.iotdm.primitive.RequestPrimitive;
+import org.opendaylight.iotdm.primitive.*;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
@@ -80,7 +77,7 @@ public class BaseCSE {
             NodeBuilder b = parent.createChild("addAE");
             b.setDisplayName("Add an AE");
             b.setSerializable(false);
-            b.setAction(AddContainer.make(this));
+            b.setAction(AddAE.make(this));
             b.build();
         }
         // Perform an initial discovery
@@ -463,6 +460,32 @@ public class BaseCSE {
         Http http=new Http();
         http.start();
         http.setContentType(OneM2M.ResourceType.CONTAINER.value());
+        http.send(exchange);
+        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
+        http.stop();
+
+        System.out.println(exchange.toString());
+        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+    }
+
+    public String createAEwithName (String to, String name, AE aepayload) {
+        RequestPrimitive primitive = new RequestPrimitive();
+        primitive.setOperation(OneM2M.Operation.CREATE.value());
+        primitive.setFrom("dslink");
+        primitive.setTo(to);
+        primitive.setRequestIdentifier("12345");
+        primitive.setName(name);
+
+        primitive.setPrimitiveContent(new PrimitiveContent());
+        primitive.getPrimitiveContent().getAny().add(aepayload);
+
+        Exchange exchange = server.createExchange(primitive);
+        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+        // How to see them in the metrics?
+
+        Http http=new Http();
+        http.start();
+        http.setContentType(OneM2M.ResourceType.AE.value());
         http.send(exchange);
         //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
         http.stop();
