@@ -1,4 +1,5 @@
 package org.dsa.iot.onem2m.server;
+import org.codehaus.jettison.json.JSONObject;
 import org.dsa.iot.dslink.node.actions.table.Row;
 import org.dsa.iot.onem2m.actions.cse.DiscoverCSEwithParameter;
 import org.dsa.iot.onem2m.actions.resource.*;
@@ -18,10 +19,12 @@ import org.opendaylight.iotdm.client.Exchange;
 import org.opendaylight.iotdm.client.impl.Http;
 import org.opendaylight.iotdm.constant.OneM2M;
 import org.opendaylight.iotdm.primitive.*;
+import org.opendaylight.iotdm.primitive.Container;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 
+import java.awt.*;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 import java.util.Map;
@@ -177,8 +180,16 @@ public class BaseCSE {
     private void handleResponseForThisNode(String response, Node node) {
         JsonObject json = new JsonObject(response);
         Object object = json.getField("responsePayload");
+        //System.out.println("response this node:" + object.toString());
         if (object instanceof JsonObject) {
-            handlePayloadForThisNode((JsonObject) object, node);
+            JsonObject responseJson = (JsonObject) object;
+            //System.out.println("FiledName:" + responseJson.getFieldNames().toString());
+            Object[] array = responseJson.getFieldNames().toArray();
+            if (array != null) {
+                String key = (String)array[0];
+                Object realPayload = responseJson.getField(key);
+                handlePayloadForThisNode((JsonObject)realPayload, node);
+            }
         } else {
             String clazz = object.getClass().getName();
             throw new RuntimeException("Unsupported instance: " + clazz);
@@ -349,6 +360,13 @@ public class BaseCSE {
             b.setAction(AddContentInstance.make(this));
             b.build();
         }
+        {
+            b = node.createChild("DeleteSelf");
+            b.setDisplayName("Delete Self");
+            b.setSerializable(false);
+            b.setAction(DeleteResource.make(this));
+            b.build();
+        }
     }
 
     public void createFunctionForAE(Node node, final JsonObject payload) {
@@ -373,6 +391,13 @@ public class BaseCSE {
             b.setDisplayName("Add Container");
             b.setSerializable(false);
             b.setAction(AddContainer.make(this));
+            b.build();
+        }
+        {
+            b = node.createChild("DeleteSelf");
+            b.setDisplayName("Delete Self");
+            b.setSerializable(false);
+            b.setAction(DeleteResource.make(this));
             b.build();
         }
     }
@@ -460,6 +485,27 @@ public class BaseCSE {
         Http http=new Http();
         http.start();
         http.setContentType(OneM2M.ResourceType.CONTAINER.value());
+        http.send(exchange);
+        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
+        http.stop();
+
+        System.out.println(exchange.toString());
+        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+    }
+
+    public String deleteResource (String to) {
+        RequestPrimitive primitive = new RequestPrimitive();
+        primitive.setOperation(OneM2M.Operation.DELETE.value());
+        primitive.setFrom("dslink");
+        primitive.setTo(to);
+        primitive.setRequestIdentifier("12345");
+
+        Exchange exchange = server.createExchange(primitive);
+        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+        // How to see them in the metrics?
+
+        Http http=new Http();
+        http.start();
         http.send(exchange);
         //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
         http.stop();
