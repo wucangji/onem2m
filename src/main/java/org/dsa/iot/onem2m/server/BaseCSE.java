@@ -19,7 +19,6 @@ import org.opendaylight.iotdm.client.Exchange;
 import org.opendaylight.iotdm.client.impl.Http;
 import org.opendaylight.iotdm.constant.OneM2M;
 import org.opendaylight.iotdm.primitive.*;
-import org.opendaylight.iotdm.primitive.Container;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
@@ -236,8 +235,8 @@ public class BaseCSE {
         }
         String rn = payload.getString("val");
         if (rn == null) {
-            //rn = payload.getString("pi") + "/" + payload.getString("rn");
-            handleTreeFields(payload, parent);
+            JsonObject baseJson = payload.getObject("m2m:csb"); // todo modify csb to cb
+            handleTreeFields(baseJson, parent);
             //createFunctionForCSE(parent, payload);
             return;
         }
@@ -443,11 +442,7 @@ public class BaseCSE {
         primitive.setFrom("dslink");
         primitive.setTo(to);
         primitive.setRequestIdentifier("12345");
-        ContentInstance conIn = new ContentInstance();
-        conIn.setContent(con);
-
-        primitive.setPrimitiveContent(new PrimitiveContent());
-        primitive.getPrimitiveContent().getAny().add(conIn);
+        primitive.setStringpayload(con);
 
         Exchange exchange = server.createExchange(primitive);
         //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
@@ -472,11 +467,7 @@ public class BaseCSE {
         primitive.setRequestIdentifier("12345");
         primitive.setName(name);
 
-        Container cnt = new Container();
-        cnt.setOntologyRef("good");
 
-        primitive.setPrimitiveContent(new PrimitiveContent());
-        primitive.getPrimitiveContent().getAny().add(cnt);
 
         Exchange exchange = server.createExchange(primitive);
         //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
@@ -514,16 +505,14 @@ public class BaseCSE {
         return exchange.getResponsePrimitive().getResponseStatusCode().toString();
     }
 
-    public String createAEwithName (String to, String name, AE aepayload) {
+    public String createAEwithName (String to, String name, String aepayload) {
         RequestPrimitive primitive = new RequestPrimitive();
         primitive.setOperation(OneM2M.Operation.CREATE.value());
         primitive.setFrom("dslink");
         primitive.setTo(to);
         primitive.setRequestIdentifier("12345");
         primitive.setName(name);
-
-        primitive.setPrimitiveContent(new PrimitiveContent());
-        primitive.getPrimitiveContent().getAny().add(aepayload);
+        primitive.setStringpayload(aepayload);
 
         Exchange exchange = server.createExchange(primitive);
         //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
