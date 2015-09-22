@@ -36,7 +36,7 @@ public class AddContainer implements Handler<ActionResult> {
 
         Node valNode = node.getChild("val");
         String ret = null;
-        Cnt cnt = new Cnt();
+        //Cnt cnt = new Cnt();
         StringBuilder sb = new StringBuilder();
         sb.append("{\"m2m:cnt\":{");
         int state = 0;
