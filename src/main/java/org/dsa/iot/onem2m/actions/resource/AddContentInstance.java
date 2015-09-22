@@ -27,10 +27,15 @@ public class AddContentInstance implements Handler<ActionResult>{
 
         Node valNode = node.getChild("val");
         String ret = null;
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"m2m:cin\":{");
         if (valNode != null) {
             String TargetContainerURI = valNode.getValue().toString();
             String con = event.getParameter("Con", ValueType.STRING).getString();
-            ret = cse.createContentInstanceWithCon(TargetContainerURI, con);
+            sb.append("\"con\":" + "\"" + con +"\"");
+            sb.append("}}");
+            System.out.println("Cinpayload:" + sb.toString());
+            ret = cse.createContentInstanceWithCon(TargetContainerURI, sb.toString());
         }
 
         event.getTable().addRow(Row.make(new Value(ret)));

@@ -12,3 +12,15 @@ Integration for onem2m systems.
 
 Note: `http://localhost:8080` is the url to the DSA broker that needs to have been installed prior.
 
+
+## How to create Container
+
+* Set labels can support 2 type:  
+	* ["string1", "string2", ...]
+	
+	![](Fig/containerLabel1.png)
+	
+	* [string1, string2, ...]
+	
+	![](Fig/containerLabel2.png)	
+

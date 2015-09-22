@@ -93,7 +93,7 @@ public class BaseCSE {
             @Override
             public void run() {
                 // Create the container to store the memory information
-                createContainerwithName(parent.getName(), "MemContainer");
+                createContainerwithName(parent.getName(), "MemContainer","");
                 addMemConInToCnt();
             }
         });
@@ -459,15 +459,14 @@ public class BaseCSE {
         return exchange.getResponsePrimitive().getResponseStatusCode().toString();
     }
 
-    public String createContainerwithName (String to, String name) {
+    public String createContainerwithName (String to, String name, String containerpayload) {
         RequestPrimitive primitive = new RequestPrimitive();
         primitive.setOperation(OneM2M.Operation.CREATE.value());
         primitive.setFrom("dslink");
         primitive.setTo(to);
         primitive.setRequestIdentifier("12345");
         primitive.setName(name);
-
-
+        primitive.setStringpayload(containerpayload);
 
         Exchange exchange = server.createExchange(primitive);
         //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
