@@ -84,7 +84,7 @@ public class BaseCSE {
         }
         // Perform an initial discovery
         //createMemContainer(parent.getName());
-        discover();
+        discoverRoot();
         //addSystemMemoryToCSE(); // if use multithread, then will have address already use problem.
     }
 
@@ -93,7 +93,7 @@ public class BaseCSE {
             @Override
             public void run() {
                 // Create the container to store the memory information
-                createContainerwithName(parent.getName(), "MemContainer","");
+                createContainerwithName(parent.getName(), "MemContainer", "");
                 addMemConInToCnt();
             }
         });
@@ -111,7 +111,7 @@ public class BaseCSE {
         }
     }
 
-    public void discover() {
+    public void discoverRoot() {
         Objects.getDaemonThreadPool().execute(new Runnable() {
             @Override
             public void run() {
@@ -127,6 +127,16 @@ public class BaseCSE {
             }
         });
     }
+
+    public void discoverThisUri(String path) {
+        Objects.getDaemonThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                buildTree(path + "?fu=1&rcn=5");
+            }
+        });
+    }
+
 
     public void customeDiscover(final String parameter) {
         Objects.getDaemonThreadPool().execute(new Runnable() {
@@ -235,7 +245,7 @@ public class BaseCSE {
         }
         String rn = payload.getString("val");
         if (rn == null) {
-            JsonObject baseJson = payload.getObject("m2m:csb"); // todo modify csb to cb
+            JsonObject baseJson = payload.getObject("m2m:cb"); // todo modify csb to cb
             handleTreeFields(baseJson, parent);
             //createFunctionForCSE(parent, payload);
             return;
@@ -260,11 +270,11 @@ public class BaseCSE {
                 @Override
                 public void handle(Node event) {
                     System.out.println("Listed: " + event.getPath());
-                    Node node = event.getChild("val");
-                    //System.out.println("val01:" + node);
+                    Node node = event.getParent().getChild(event.getName()).getChild("val");
+                    System.out.println("val01:" + node);
                     if (node == null) {
                         node = event.getParent().getChild("val");
-                        //System.out.println("val02:" + node);
+                        System.out.println("val02:" + node);
                         if (node == null) {
                             return;
                         }
@@ -480,6 +490,7 @@ public class BaseCSE {
         http.stop();
 
         System.out.println(exchange.toString());
+
         return exchange.getResponsePrimitive().getResponseStatusCode().toString();
     }
 

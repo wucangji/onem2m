@@ -15,7 +15,7 @@ public class DiscoverCSE implements Handler<ActionResult> {
     public void handle(ActionResult event) {
         Node node = event.getNode().getParent();
         BaseCSE cse = node.getMetaData();
-        cse.discover();
+        cse.discoverRoot();
     }
 
     public static Action make() {

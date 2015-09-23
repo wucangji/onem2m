@@ -97,14 +97,22 @@ public class AddContainer implements Handler<ActionResult> {
 //
 //        String cntpayload = "{\"m2m:cnt\":" + JsonString + "}";
         System.out.println("Container Json String: " + cntpayload);
+        String TargetContainerURI = "";
         if (valNode != null) {
-            String TargetContainerURI = valNode.getValue().toString();
-            String Name = event.getParameter("Name", ValueType.STRING).getString();
-            ret = cse.createContainerwithName(TargetContainerURI, Name, cntpayload);
+            TargetContainerURI = valNode.getValue().toString();
         } else if (node.getChild("ty").getValue().toString().compareTo("5") == 0) {
-            String TargetContainerURI = node.getChild("rn").getValue().toString();
-            String Name = event.getParameter("Name", ValueType.STRING).getString();
-            ret = cse.createContainerwithName(TargetContainerURI, Name, cntpayload);
+            TargetContainerURI = node.getChild("rn").getValue().toString();
+//            String Name = event.getParameter("Name", ValueType.STRING).getString();
+//            ret = cse.createContainerwithName(TargetContainerURI, Name, cntpayload);
+//            cse.discoverThisUri(TargetContainerURI);
+        }
+
+        String Name = event.getParameter("Name", ValueType.STRING).getString();
+        ret = cse.createContainerwithName(TargetContainerURI, Name, cntpayload);
+        cse.discoverThisUri(TargetContainerURI);
+
+        if (ret == null) {
+            ret = "Failed to add Container";
         }
 
         event.getTable().addRow(Row.make(new Value(ret)));

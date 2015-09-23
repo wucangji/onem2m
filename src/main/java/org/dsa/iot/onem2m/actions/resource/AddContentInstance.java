@@ -36,6 +36,8 @@ public class AddContentInstance implements Handler<ActionResult>{
             sb.append("}}");
             System.out.println("Cinpayload:" + sb.toString());
             ret = cse.createContentInstanceWithCon(TargetContainerURI, sb.toString());
+        }else {
+            ret = "Failed to add ContentInstance";
         }
 
         event.getTable().addRow(Row.make(new Value(ret)));

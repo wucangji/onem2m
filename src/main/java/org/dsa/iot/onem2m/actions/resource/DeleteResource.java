@@ -23,6 +23,11 @@ public class DeleteResource implements Handler<ActionResult> {
     }
     @Override
     public void handle(ActionResult event) {
+//        Value val = event.getParameter("Confirm", ValueType.STRING);
+//        if (!"1234".equals(val.getString())) {
+//            throw new RuntimeException();
+//        }
+
         Node node = event.getNode().getParent();
 
         Node valNode = node.getChild("val");
@@ -30,8 +35,10 @@ public class DeleteResource implements Handler<ActionResult> {
         if (valNode != null) {
             String TargetContainerURI = valNode.getValue().toString();
             ret = cse.deleteResource(TargetContainerURI);
+        } else {
+            ret = "Failed to delete";
         }
-
+        cse.discoverRoot();
         event.getTable().addRow(Row.make(new Value(ret)));
     }
 
@@ -39,7 +46,8 @@ public class DeleteResource implements Handler<ActionResult> {
         Action act = new Action(Permission.WRITE, new DeleteResource(cse));
         {
             Parameter p = new Parameter("Confirm", ValueType.STRING);
-            p.setDefaultValue(new Value("Confirm you want to delete it!"));  // how to add a confirm button?
+            p.setDefaultValue(new Value("Confirm you want to delete it!"));
+            p.setDescription("Click Invoke to confirm deletion");
             act.addParameter(p);
         }
         {

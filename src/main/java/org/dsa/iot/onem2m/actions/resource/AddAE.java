@@ -54,6 +54,11 @@ public class AddAE  implements Handler<ActionResult> {
             String TargetContainerURI = node.getChild("rn").getValue().toString();
             String Name = event.getParameter("Name", ValueType.STRING).getString();
             ret = cse.createAEwithName(TargetContainerURI, Name, sb.toString());
+            cse.discoverRoot();
+        }
+
+        if (ret == null) {
+            ret = "Failed to add Container";
         }
 
         event.getTable().addRow(Row.make(new Value(ret)));
