@@ -19,14 +19,16 @@ import org.opendaylight.iotdm.client.Exchange;
 import org.opendaylight.iotdm.client.impl.Http;
 import org.opendaylight.iotdm.constant.OneM2M;
 import org.opendaylight.iotdm.primitive.*;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-
+import org.dsa.iot.dslink.util.handler.Handler;
+//import org.vertx.java.core.json.JsonArray;
+//import org.vertx.java.core.json.JsonObject;
+import org.dsa.iot.dslink.util.json.JsonArray;
+import org.dsa.iot.dslink.util.json.JsonObject;
 import java.awt.*;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Samuel Grenier
@@ -188,15 +190,15 @@ public class BaseCSE {
 
     private void handleResponseForThisNode(String response, Node node) {
         JsonObject json = new JsonObject(response);
-        Object object = json.getField("responsePayload");
+        Object object = json.get("responsePayload");
         //System.out.println("response this node:" + object.toString());
         if (object instanceof JsonObject) {
             JsonObject responseJson = (JsonObject) object;
             //System.out.println("FiledName:" + responseJson.getFieldNames().toString());
-            Object[] array = responseJson.getFieldNames().toArray();
+            Object[] array = responseJson.getMap().keySet().toArray();
             if (array != null) {
                 String key = (String)array[0];
-                Object realPayload = responseJson.getField(key);
+                Object realPayload = responseJson.get(key);
                 handlePayloadForThisNode((JsonObject)realPayload, node);
             }
         } else {
@@ -207,7 +209,7 @@ public class BaseCSE {
 
     private void handleResponse(String response) {
         JsonObject json = new JsonObject(response);
-        Object object = json.getField("responsePayload");
+        Object object = json.get("responsePayload");
         if (object instanceof JsonObject) {
             handlePayload((JsonObject) object);
         } else if (object instanceof JsonArray) {
@@ -228,7 +230,7 @@ public class BaseCSE {
         if (payload == null) {
             return;
         }
-        String rn = payload.getString("rn");
+        String rn = payload.get("rn");
 
         System.out.println("rn1:" + rn);
         if (rn == null) {
@@ -243,9 +245,9 @@ public class BaseCSE {
         if (payload == null) {
             return;
         }
-        String rn = payload.getString("val");
+        String rn = payload.get("val");
         if (rn == null) {
-            JsonObject baseJson = payload.getObject("m2m:cb"); // todo modify csb to cb
+            JsonObject baseJson = payload.get("m2m:cb"); // todo modify csb to cb
             handleTreeFields(baseJson, parent);
             //createFunctionForCSE(parent, payload);
             return;
@@ -269,12 +271,12 @@ public class BaseCSE {
                 // if it is a parent node, will this listener be triggered? how to get the same result as others?
                 @Override
                 public void handle(Node event) {
-                    System.out.println("Listed: " + event.getPath());
+                    //System.out.println("Listed: " + event.getPath());
                     Node node = event.getParent().getChild(event.getName()).getChild("val");
-                    System.out.println("val01:" + node);
+                    //System.out.println("val01:" + node);
                     if (node == null) {
                         node = event.getParent().getChild("val");
-                        System.out.println("val02:" + node);
+                        //System.out.println("val02:" + node);
                         if (node == null) {
                             return;
                         }
@@ -293,7 +295,7 @@ public class BaseCSE {
         }
         node = b.build();
         handleTreeFields(payload, node);
-        int ty = payload.getNumber("typ").intValue();
+        int ty = payload.get("typ");
         if (ty == 3) {
             // if this resource is a container.
             createFunctionForContainer(node,payload);
@@ -330,7 +332,7 @@ public class BaseCSE {
         b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
             @Override
             public void handle(ActionResult event) {
-                String latestURI = payload.getString("val") + "/latest";
+                String latestURI = payload.get("val") + "/latest";
                 System.out.println("latestURI" + latestURI);
                 Node latestNode = event.getNode().getParent().getChild("val");
                 latestNode.clearChildren();
@@ -346,7 +348,7 @@ public class BaseCSE {
         b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
             @Override
             public void handle(ActionResult event) {
-                String latestURI = payload.getString("val");
+                String latestURI = payload.get("val");
                 System.out.println("latestURI" + latestURI);
                 Node selfNode = event.getNode().getParent().getChild("val");
                 selfNode.clearChildren();
@@ -386,7 +388,7 @@ public class BaseCSE {
         b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
             @Override
             public void handle(ActionResult event) {
-                String latestURI = payload.getString("val");
+                String latestURI = payload.get("val");
                 System.out.println("latestURI" + latestURI);
                 Node selfNode = event.getNode().getParent().getChild("val");
                 selfNode.clearChildren();
@@ -418,7 +420,7 @@ public class BaseCSE {
         }
 
         //node.clearChildren();
-        Map<String, Object> map = obj.toMap();
+        Map<String, Object> map = obj.getMap();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             String name = entry.getKey();
             Value value = ValueUtils.toValue(entry.getValue());

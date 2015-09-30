@@ -1,6 +1,8 @@
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'findbugs'
+apply plugin: 'maven'
+group = 'myGroup'
 
 version '0.0.1'
 
@@ -16,8 +18,8 @@ repositories {
 }
 
 dependencies {
-    compile 'org.iot-dsa:commons:0.9.0-SNAPSHOT'
-    compile 'org.iot-dsa:dslink:0.9.0-SNAPSHOT'
+    compile 'org.iot-dsa:commons:0.10.0-SNAPSHOT'
+    compile 'org.iot-dsa:dslink:0.10.0-SNAPSHOT'
     compile fileTree('external')
 
     // onem2m dependencies
@@ -36,6 +38,21 @@ tasks.withType(FindBugs) {
         xml.enabled = false
         html.enabled = true
     }
+}
+
+task writeNewPom << {
+    pom {
+        project {
+            inceptionYear '2015'
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+            }
+        }
+    }.writeTo("pom.xml")
 }
 
 run {
