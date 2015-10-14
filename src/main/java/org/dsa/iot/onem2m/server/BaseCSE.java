@@ -130,7 +130,7 @@ public class BaseCSE {
         });
     }
 
-    public void discoverThisUri(String path) {
+    public void discoverThisUri(final String path) {
         Objects.getDaemonThreadPool().execute(new Runnable() {
             @Override
             public void run() {
