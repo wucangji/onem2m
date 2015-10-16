@@ -18,8 +18,8 @@ repositories {
 }
 
 dependencies {
-    compile 'org.iot-dsa:commons:0.11.0-SNAPSHOT'
-    compile 'org.iot-dsa:dslink:0.11.0-SNAPSHOT'
+    compile 'org.iot-dsa:commons:0.12.0-SNAPSHOT'
+    compile 'org.iot-dsa:dslink:0.12.0-SNAPSHOT'
     compile fileTree('external')
 
     // onem2m dependencies

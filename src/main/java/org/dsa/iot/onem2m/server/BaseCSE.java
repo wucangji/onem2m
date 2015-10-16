@@ -27,6 +27,9 @@ import org.dsa.iot.dslink.util.json.JsonObject;
 import java.awt.*;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +38,7 @@ import java.util.Set;
  */
 public class BaseCSE {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseCSE.class);
     private final OneM2MServer server;
     private final Node parent; // parent is the CSENode
 
@@ -184,7 +188,7 @@ public class BaseCSE {
         http.start();
         http.send(exchange);
         http.stop();
-        //System.out.println(exchange.toString());
+        System.out.println(exchange.getClient().toString()); // todo: add some check
         return exchange.getClient().toString();
     }
 
@@ -272,14 +276,30 @@ public class BaseCSE {
                 @Override
                 public void handle(Node event) {
                     //System.out.println("Listed: " + event.getPath());
-                    Node node = event.getParent().getChild(event.getName()).getChild("val");
-                    //System.out.println("val01:" + node);
-                    if (node == null) {
-                        node = event.getParent().getChild("val");
-                        //System.out.println("val02:" + node);
-                        if (node == null) {
+                    Node node;
+                    try {
+                        if (event == null) {
+                            LOGGER.error("Event is null");
                             return;
                         }
+                        Node parent = event.getParent();
+                        node = parent.getChild(event.getName());
+                        if (node != null) {
+                            node = node.getChild("val");
+                        } else {
+                            LOGGER.error("Own node is null");
+                        }
+                        //System.out.println("val01:" + node);
+                        if (node == null) {
+                            node = event.getParent().getChild("val");
+                            //System.out.println("val02:" + node);
+                            if (node == null) {
+                                return;
+                            }
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error("277handle", e);
+                        return;
                     }
                     final Node rnNode = node;
                     Objects.getDaemonThreadPool().execute(new Runnable() {
@@ -337,6 +357,7 @@ public class BaseCSE {
                 Node latestNode = event.getNode().getParent().getChild("val");
                 latestNode.clearChildren();
                 buildTreeForThisNode(latestURI, latestNode);
+                // todo: remove this build can remove the update of the Container node.
                 System.out.println("lst : " + latestNode.getChild("con").getValue().toString());
                 String lastCon = latestNode.getChild("con").getValue().toString();
                 event.getTable().addRow(Row.make(new Value(lastCon)));
