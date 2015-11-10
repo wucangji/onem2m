@@ -13,7 +13,6 @@ import org.dsa.iot.dslink.node.actions.table.Row;
 import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.onem2m.server.BaseCSE;
-import org.opendaylight.iotdm.primitive.Cnt;
 import org.dsa.iot.dslink.util.handler.Handler;
 
 import java.io.IOException;

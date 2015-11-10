@@ -1,4 +1,6 @@
 package org.dsa.iot.onem2m.server;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.codehaus.jettison.json.JSONObject;
 import org.dsa.iot.dslink.node.actions.table.Row;
 import org.dsa.iot.onem2m.actions.cse.DiscoverCSEwithParameter;
@@ -15,10 +17,15 @@ import org.dsa.iot.dslink.node.value.ValueUtils;
 import org.dsa.iot.dslink.util.Objects;
 import org.dsa.iot.onem2m.actions.cse.DeleteCSE;
 import org.dsa.iot.onem2m.actions.cse.DiscoverCSE;
-import org.opendaylight.iotdm.client.Exchange;
+import org.onem2m.xml.protocols.AggregatedRequest;
+import org.onem2m.xml.protocols.Req;
+import org.onem2m.xml.protocols.Rqp;
+import org.opendaylight.iotdm.client.Request;
+import org.opendaylight.iotdm.client.Response;
+import org.opendaylight.iotdm.client.api.Client;
 import org.opendaylight.iotdm.client.impl.Http;
+import org.opendaylight.iotdm.client.util.Json;
 import org.opendaylight.iotdm.constant.OneM2M;
-import org.opendaylight.iotdm.primitive.*;
 import org.dsa.iot.dslink.util.handler.Handler;
 //import org.vertx.java.core.json.JsonArray;
 //import org.vertx.java.core.json.JsonObject;
@@ -163,39 +170,40 @@ public class BaseCSE {
     }
 
     private void buildTree(String to) {
-        RequestPrimitive primitive = new RequestPrimitive();
-        primitive.setOperation(OneM2M.Operation.RETRIEVE.value());
-        primitive.setFrom("dslink");
-        primitive.setTo(to);
-        primitive.setRequestIdentifier("12345");
-
-        Exchange exchange = server.createExchange(primitive);
-        handleResponse(send(exchange));
+        Request primitive = new Request();
+        primitive.operation(OneM2M.Operation.RETRIEVE);
+        primitive.from("dslink");
+        primitive.to(to);
+        primitive.requestIdentifier("12345");
+        Response response = send(primitive);
+        handleResponse(response);
     }
 
     private void buildTreeForThisNode(String to, Node node) {
-        RequestPrimitive primitive = new RequestPrimitive();
-        primitive.setOperation(OneM2M.Operation.RETRIEVE.value());
-        primitive.setFrom("dslink");
-        primitive.setTo(to);
-        primitive.setRequestIdentifier("12345");
+        Request primitive = new Request();
+        primitive.operation(OneM2M.Operation.RETRIEVE);
+        primitive.from("dslink");
+        primitive.to(to);
+        primitive.requestIdentifier("12345");
 
-        Exchange exchange = server.createExchange(primitive);
-        handleResponseForThisNode(send(exchange), node);
+        handleResponseForThisNode(send(primitive), node);
     }
-    private synchronized String send(Exchange exchange) {
-        Http http = new Http();
+    private synchronized Response send(Request request) {
+        Client http = new Http();
         http.start();
-        http.send(exchange);
+        Response response = http.send(request);
         http.stop();
-        System.out.println(exchange.getClient().toString()); // todo: add some check
-        return exchange.getClient().toString();
+        System.out.println(response.toString()); // todo: add some check
+        return response;
     }
 
-    private void handleResponseForThisNode(String response, Node node) {
-        JsonObject json = new JsonObject(response);
+    private void handleResponseForThisNode(Response response, Node node) {
+        //JsonObject json = new JsonObject(response);
+        //Object object = json.get("responsePayload");
+        String str =Json.newInstance().toJson(response.getPrimitiveContent());
+        JsonObject json = new JsonObject(str);
         Object object = json.get("responsePayload");
-        //System.out.println("response this node:" + object.toString());
+        System.out.println("response this node:" + str);
         if (object instanceof JsonObject) {
             JsonObject responseJson = (JsonObject) object;
             //System.out.println("FiledName:" + responseJson.getFieldNames().toString());
@@ -211,9 +219,11 @@ public class BaseCSE {
         }
     }
 
-    private void handleResponse(String response) {
-        JsonObject json = new JsonObject(response);
-        Object object = json.get("responsePayload");
+    private void handleResponse(Response response) {
+//        JsonObject json = new JsonObject(response);
+//        Object object = json.get("responsePayload");
+        String str =Json.newInstance().toJson(response.getPrimitiveContent());
+        Object object = new JsonObject(str);
         if (object instanceof JsonObject) {
             handlePayload((JsonObject) object);
         } else if (object instanceof JsonArray) {
@@ -470,96 +480,100 @@ public class BaseCSE {
 
 
     public String createContentInstanceWithCon (String to, String con) {
-        RequestPrimitive primitive = new RequestPrimitive();
-        primitive.setOperation(OneM2M.Operation.CREATE.value());
-        primitive.setFrom("dslink");
-        primitive.setTo(to);
-        primitive.setRequestIdentifier("12345");
-        primitive.setStringpayload(con);
-
-        Exchange exchange = server.createExchange(primitive);
-        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
-        // How to see them in the metrics?
-
-        Http http=new Http();
-        http.start();
-        http.setContentType(OneM2M.ResourceType.CONTENT_INSTANCE.value());
-        http.send(exchange);
-        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
-        http.stop();
-
-        System.out.println(exchange.toString());
-        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+//        RequestPrimitive primitive = new RequestPrimitive();
+//        primitive.setOperation(OneM2M.Operation.CREATE.value());
+//        primitive.setFrom("dslink");
+//        primitive.setTo(to);
+//        primitive.setRequestIdentifier("12345");
+//        primitive.setStringpayload(con);
+//
+//        Exchange exchange = server.createExchange(primitive);
+//        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+//        // How to see them in the metrics?
+//
+//        Http http=new Http();
+//        http.start();
+//        http.setContentType(OneM2M.ResourceType.CONTENT_INSTANCE.value());
+//        http.send(exchange);
+//        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
+//        http.stop();
+//
+//        System.out.println(exchange.toString());
+//        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+        return null;
     }
 
     public String createContainerwithName (String to, String name, String containerpayload) {
-        RequestPrimitive primitive = new RequestPrimitive();
-        primitive.setOperation(OneM2M.Operation.CREATE.value());
-        primitive.setFrom("dslink");
-        primitive.setTo(to);
-        primitive.setRequestIdentifier("12345");
-        primitive.setName(name);
-        primitive.setStringpayload(containerpayload);
-
-        Exchange exchange = server.createExchange(primitive);
-        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
-        // How to see them in the metrics?
-
-        Http http=new Http();
-        http.start();
-        http.setContentType(OneM2M.ResourceType.CONTAINER.value());
-        http.send(exchange);
-        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
-        http.stop();
-
-        System.out.println(exchange.toString());
-
-        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+//        RequestPrimitive primitive = new RequestPrimitive();
+//        primitive.setOperation(OneM2M.Operation.CREATE.value());
+//        primitive.setFrom("dslink");
+//        primitive.setTo(to);
+//        primitive.setRequestIdentifier("12345");
+//        primitive.setName(name);
+//        primitive.setStringpayload(containerpayload);
+//
+//        Exchange exchange = server.createExchange(primitive);
+//        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+//        // How to see them in the metrics?
+//
+//        Http http=new Http();
+//        http.start();
+//        http.setContentType(OneM2M.ResourceType.CONTAINER.value());
+//        http.send(exchange);
+//        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
+//        http.stop();
+//
+//        System.out.println(exchange.toString());
+//
+//        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+        return null;
     }
 
     public String deleteResource (String to) {
-        RequestPrimitive primitive = new RequestPrimitive();
-        primitive.setOperation(OneM2M.Operation.DELETE.value());
-        primitive.setFrom("dslink");
-        primitive.setTo(to);
-        primitive.setRequestIdentifier("12345");
-
-        Exchange exchange = server.createExchange(primitive);
-        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
-        // How to see them in the metrics?
-
-        Http http=new Http();
-        http.start();
-        http.send(exchange);
-        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
-        http.stop();
-
-        System.out.println(exchange.toString());
-        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+//        RequestPrimitive primitive = new RequestPrimitive();
+//        primitive.setOperation(OneM2M.Operation.DELETE.value());
+//        primitive.setFrom("dslink");
+//        primitive.setTo(to);
+//        primitive.setRequestIdentifier("12345");
+//
+//        Exchange exchange = server.createExchange(primitive);
+//        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+//        // How to see them in the metrics?
+//
+//        Http http=new Http();
+//        http.start();
+//        http.send(exchange);
+//        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
+//        http.stop();
+//
+//        System.out.println(exchange.toString());
+//        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+        return null;
     }
 
     public String createAEwithName (String to, String name, String aepayload) {
-        RequestPrimitive primitive = new RequestPrimitive();
-        primitive.setOperation(OneM2M.Operation.CREATE.value());
-        primitive.setFrom("dslink");
-        primitive.setTo(to);
-        primitive.setRequestIdentifier("12345");
-        primitive.setName(name);
-        primitive.setStringpayload(aepayload);
-
-        Exchange exchange = server.createExchange(primitive);
-        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
-        // How to see them in the metrics?
-
-        Http http=new Http();
-        http.start();
-        http.setContentType(OneM2M.ResourceType.AE.value());
-        http.send(exchange);
-        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
-        http.stop();
-
-        System.out.println(exchange.toString());
-        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+//        RequestPrimitive primitive = new RequestPrimitive();
+//        primitive.setOperation(OneM2M.Operation.CREATE.value());
+//        primitive.setFrom("dslink");
+//        primitive.setTo(to);
+//        primitive.setRequestIdentifier("12345");
+//        primitive.setName(name);
+//        primitive.setStringpayload(aepayload);
+//
+//        Exchange exchange = server.createExchange(primitive);
+//        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+//        // How to see them in the metrics?
+//
+//        Http http=new Http();
+//        http.start();
+//        http.setContentType(OneM2M.ResourceType.AE.value());
+//        http.send(exchange);
+//        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
+//        http.stop();
+//
+//        System.out.println(exchange.toString());
+//        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+        return null;
     }
 
 }

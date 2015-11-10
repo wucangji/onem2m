@@ -5,8 +5,7 @@ import org.dsa.iot.dslink.node.NodeBuilder;
 import org.dsa.iot.onem2m.actions.cse.AddCSE;
 import org.dsa.iot.onem2m.actions.server.DeleteServer;
 import org.dsa.iot.onem2m.actions.server.EditServer;
-import org.opendaylight.iotdm.client.Exchange;
-import org.opendaylight.iotdm.primitive.RequestPrimitive;
+
 
 import java.util.Map;
 
@@ -29,13 +28,6 @@ public class OneM2MServer {
         BaseCSE.init(b.build());
     }
 
-    protected Exchange createExchange(RequestPrimitive primitive) {
-        Exchange exchange = new Exchange();
-        exchange.setHost(getHost());
-        exchange.setPort(getPort());
-        exchange.setRequestPrimitive(primitive);
-        return exchange;
-    }
 
     private String getHost() {
         return parent.getRoConfig("host").getString();
