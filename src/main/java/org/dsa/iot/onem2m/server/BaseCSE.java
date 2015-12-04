@@ -173,6 +173,20 @@ public class BaseCSE {
         handleResponse(send(exchange));
     }
 
+    private String getResponseJsonString(String to) {
+        RequestPrimitive primitive = new RequestPrimitive();
+        primitive.setOperation(OneM2M.Operation.RETRIEVE.value());
+        primitive.setFrom("dslink");
+        primitive.setTo(to);
+        primitive.setRequestIdentifier("12345");
+
+        Exchange exchange = server.createExchange(primitive);
+        send(exchange);
+        JsonObject json = new JsonObject(exchange.getClient().toString());
+        Object object = json.get("responsePayload");
+        return object.toString();
+    }
+
     private void buildTreeForThisNode(String to, Node node) {
         RequestPrimitive primitive = new RequestPrimitive();
         primitive.setOperation(OneM2M.Operation.RETRIEVE.value());
@@ -348,7 +362,7 @@ public class BaseCSE {
     public void createFunctionForContainer(Node node, final JsonObject payload) {
         // if this resource is a container.
         NodeBuilder b = node.createFakeBuilder();// what does this node builder do ?
-        b = node.createChild("Get Latest Con");
+        b = node.createChild("Get Latest");
         b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
             @Override
             public void handle(ActionResult event) {
@@ -363,10 +377,11 @@ public class BaseCSE {
                 buildTreeForThisNode(latestURI, latestNode);
                 // todo: remove this build can remove the update of the Container node.
                 System.out.println("lst : " + latestNode.getChild("con").getValue().toString());
-                String lastCon = latestNode.getChild("con").getValue().toString();
+                //String lastCon = latestNode.getChild("con").getValue().toString();
+                String lastCon = getResponseJsonString(latestURI);
                 event.getTable().addRow(Row.make(new Value(lastCon)));
             }
-        }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest", ValueType.STRING)));
+        }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest Cin", ValueType.STRING)));
         b.build();
 
         b = node.createChild("Get Latest createTime");
