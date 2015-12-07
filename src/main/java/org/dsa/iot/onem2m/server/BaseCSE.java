@@ -62,14 +62,14 @@ public class BaseCSE {
         }
         {
             NodeBuilder b = parent.createChild("discover");
-            b.setDisplayName("Discover");
+            b.setDisplayName("Refresh");
             b.setSerializable(false);
             b.setAction(DiscoverCSE.make());
             b.build();
         }
         {
             NodeBuilder b = parent.createChild("discover2");
-            b.setDisplayName("Custom Discover");
+            b.setDisplayName("Discover");
             b.setSerializable(false);
             b.setAction(DiscoverCSEwithParameter.make());
             b.build();
@@ -173,7 +173,7 @@ public class BaseCSE {
         handleResponse(send(exchange));
     }
 
-    private String getResponseJsonString(String to) {
+    public String getResponseJsonString(String to) {
         RequestPrimitive primitive = new RequestPrimitive();
         primitive.setOperation(OneM2M.Operation.RETRIEVE.value());
         primitive.setFrom("dslink");
@@ -248,6 +248,7 @@ public class BaseCSE {
         if (payload == null) {
             return;
         }
+        //todo: may not contain rn, for example, error
         String rn = payload.get("rn");
 
         System.out.println("rn1:" + rn);
@@ -384,26 +385,26 @@ public class BaseCSE {
         }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest Cin", ValueType.STRING)));
         b.build();
 
-        b = node.createChild("Get Latest createTime");
-        b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
-            @Override
-            public void handle(ActionResult event) {
-                String latestURI = payload.get("val") + "/latest";
-                System.out.println("latestURI" + latestURI);
-
-                NodeBuilder latest = event.getNode().getParent().createChild("Latest ContentInstance");
-                latest.setSerializable(false);
-                latest.setValueType(ValueType.DYNAMIC);
-                Node latestNode1 = latest.build();
-                buildTreeForThisNode(latestURI, latestNode1);
-
-                // todo: remove this build can remove the update of the Container node.
-                System.out.println("lst : " + latestNode1.getChild("ct").getValue().toString());
-                String lastCon = latestNode1.getChild("ct").getValue().toString();
-                event.getTable().addRow(Row.make(new Value(lastCon)));
-            }
-        }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest", ValueType.STRING)));
-        b.build();
+//        b = node.createChild("Get Latest createTime");
+//        b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+//            @Override
+//            public void handle(ActionResult event) {
+//                String latestURI = payload.get("val") + "/latest";
+//                System.out.println("latestURI" + latestURI);
+//
+//                NodeBuilder latest = event.getNode().getParent().createChild("Latest ContentInstance");
+//                latest.setSerializable(false);
+//                latest.setValueType(ValueType.DYNAMIC);
+//                Node latestNode1 = latest.build();
+//                buildTreeForThisNode(latestURI, latestNode1);
+//
+//                // todo: remove this build can remove the update of the Container node.
+//                System.out.println("lst : " + latestNode1.getChild("ct").getValue().toString());
+//                String lastCon = latestNode1.getChild("ct").getValue().toString();
+//                event.getTable().addRow(Row.make(new Value(lastCon)));
+//            }
+//        }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest", ValueType.STRING)));
+//        b.build();
 
         b = node.createChild("Get Self");
         b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
@@ -439,6 +440,13 @@ public class BaseCSE {
             b.setAction(DeleteResource.make(this));
             b.build();
         }
+        {
+            b = node.createChild("Discover");
+            b.setDisplayName("Discover");
+            b.setSerializable(false);
+            b.setAction(DiscoverwithParameter.make(this));
+            b.build();
+        }
     }
 
     public void createFunctionForAE(Node node, final JsonObject payload) {
@@ -470,6 +478,13 @@ public class BaseCSE {
             b.setDisplayName("Delete Self");
             b.setSerializable(false);
             b.setAction(DeleteResource.make(this));
+            b.build();
+        }
+        {
+            b = node.createChild("Discover");
+            b.setDisplayName("Discover");
+            b.setSerializable(false);
+            b.setAction(DiscoverwithParameter.make(this));
             b.build();
         }
     }

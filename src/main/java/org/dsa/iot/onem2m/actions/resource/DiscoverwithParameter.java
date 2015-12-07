@@ -1,4 +1,4 @@
-package org.dsa.iot.onem2m.actions.cse;
+package org.dsa.iot.onem2m.actions.resource;
 
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.Permission;
@@ -12,14 +12,23 @@ import org.dsa.iot.onem2m.server.BaseCSE;
 import org.dsa.iot.dslink.util.handler.Handler;
 
 /**
- * Created by canwu on 9/10/15.
+ * Created by canwu on 12/7/15.
  */
-public class DiscoverCSEwithParameter implements Handler<ActionResult> {
+public class DiscoverwithParameter implements Handler<ActionResult>{
+
+
+    private final BaseCSE cse;
+
+    private DiscoverwithParameter(BaseCSE cse) {
+        this.cse = cse;
+    }
     @Override
     public void handle(ActionResult event) {
-        Node node = event.getNode().getParent();
-        BaseCSE cse = node.getMetaData();
 
+        Node node = event.getNode().getParent();
+
+        Node valNode = node.getChild("val");
+        String ret = null;
 
         Value parameter = event.getParameter("Parameter");
 
@@ -32,22 +41,25 @@ public class DiscoverCSEwithParameter implements Handler<ActionResult> {
             }
         }
 
-        //Can we print out the error information to the customer/dglux?
-        //cse.customeDiscover(sb.toString());
-        String cseName = node.getName();
-        String lastCon = cse.getResponseJsonString(cseName + sb.toString());
-        event.getTable().addRow(Row.make(new Value(lastCon)));
+        if (valNode != null) {
+            String TargetResourceURI = valNode.getValue().toString();
+            ret = cse.getResponseJsonString(TargetResourceURI + sb.toString());
+        } else {
+            ret = "Failed to get the URI";
+        }
+        event.getTable().addRow(Row.make(new Value(ret)));
+
+
+
     }
 
-    public static Action make() {
-        Action act = new Action(Permission.WRITE, new DiscoverCSEwithParameter());
-
+    public static Action make(BaseCSE cse) {
+        Action act = new Action(Permission.WRITE, new DiscoverwithParameter(cse));
         {
             Parameter p = new Parameter("Parameter", ValueType.STRING);
             p.setPlaceHolder("use & to connect parameter");
             act.addParameter(p);
         }
-
         {
             Parameter p = new Parameter("Response", ValueType.STRING);
             act.addResult(p);
