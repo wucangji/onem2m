@@ -10,6 +10,9 @@ import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.onem2m.server.BaseCSE;
 import org.dsa.iot.dslink.util.handler.Handler;
+
+import java.util.Map;
+
 /**
  * Created by canwu on 9/8/15.
  */
@@ -36,7 +39,16 @@ public class AddContentInstance implements Handler<ActionResult>{
             sb.append("}}");
             System.out.println("Cinpayload:" + sb.toString());
             ret = cse.createContentInstanceWithCon(TargetContainerURI, sb.toString());
+            Map<String, Node> children = node.getChildren();
+            if (children != null) {
+                for (Node node1 : children.values()) {
+                    if (node1.getAction() == null && !(node1.getName().equalsIgnoreCase("val") || node1.getName().equalsIgnoreCase("typ") || node1.getName().equalsIgnoreCase("nm"))) {
+                        node.removeChild(node1);
+                    }
+                }
+            }
             cse.discoverThisUri(TargetContainerURI);
+            cse.createLatestNode(node, TargetContainerURI);
         }else {
             ret = "Failed to add ContentInstance";
         }

@@ -447,6 +447,31 @@ public class BaseCSE {
             b.setAction(DiscoverwithParameter.make(this));
             b.build();
         }
+        {
+
+            String latestURI = payload.get("val") + "/latest";
+            String result = getResponseJsonString(latestURI);
+            if (!result.contains("error")) {
+                NodeBuilder latest = node.createChild("Latest ContentInstance");
+                latest.setSerializable(false);
+                latest.setValueType(ValueType.DYNAMIC);
+                Node latestNode = latest.build();
+                buildTreeForThisNode(latestURI, latestNode);
+            }
+        }
+    }
+
+    public void createLatestNode(Node node, String containerURI) {
+
+        String latestURI = containerURI + "/latest";
+        String result = getResponseJsonString(latestURI);
+        if (!result.contains("error")) {
+            NodeBuilder latest = node.createChild("Latest ContentInstance");
+            latest.setSerializable(false);
+            latest.setValueType(ValueType.DYNAMIC);
+            Node latestNode = latest.build();
+            buildTreeForThisNode(latestURI, latestNode);
+        }
     }
 
     public void createFunctionForAE(Node node, final JsonObject payload) {
@@ -499,6 +524,7 @@ public class BaseCSE {
         Map<String, Object> map = obj.getMap();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             String name = entry.getKey();
+            // todo: map name to full name
             Value value = ValueUtils.toValue(entry.getValue());
 
             Node n = node.getChild(name);
