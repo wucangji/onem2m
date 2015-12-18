@@ -43,6 +43,7 @@ public class DiscoverwithParameter implements Handler<ActionResult>{
 
         if (valNode != null) {
             String TargetResourceURI = valNode.getValue().toString();
+            cse.discoverThisUri(TargetResourceURI + sb.toString());
             ret = cse.getResponseJsonString(TargetResourceURI + sb.toString());
         } else {
             ret = "Failed to get the URI";

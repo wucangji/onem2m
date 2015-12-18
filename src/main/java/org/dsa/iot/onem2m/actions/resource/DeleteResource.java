@@ -11,6 +11,8 @@ import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.onem2m.server.BaseCSE;
 import org.dsa.iot.dslink.util.handler.Handler;
 
+import java.util.Map;
+
 /**
  * Created by canwu on 9/16/15.
  */
@@ -23,22 +25,28 @@ public class DeleteResource implements Handler<ActionResult> {
     }
     @Override
     public void handle(ActionResult event) {
-//        Value val = event.getParameter("Confirm", ValueType.STRING);
-//        if (!"1234".equals(val.getString())) {
-//            throw new RuntimeException();
-//        }
 
         Node node = event.getNode().getParent();
 
         Node valNode = node.getChild("val");
+        String TargetContainerURI = valNode.getValue().toString();
         String ret = null;
         if (valNode != null) {
-            String TargetContainerURI = valNode.getValue().toString();
             ret = cse.deleteResource(TargetContainerURI);
         } else {
             ret = "Failed to delete";
         }
-        cse.discoverRoot();
+        Node parent = node.getParent();
+        String parentPath = TargetContainerURI.substring(0, TargetContainerURI.lastIndexOf("/"));
+        Map<String, Node> children = parent.getChildren();
+        if (children != null) {
+            for (Node node1 : children.values()) {
+                if (node1.getAction() == null && !(node1.getName().equalsIgnoreCase("val") || node1.getName().equalsIgnoreCase("typ") || node1.getName().equalsIgnoreCase("nm"))) {
+                    parent.removeChild(node1);
+                }
+            }
+        }
+        cse.discoverThisUri(parentPath);
         event.getTable().addRow(Row.make(new Value(ret)));
     }
 

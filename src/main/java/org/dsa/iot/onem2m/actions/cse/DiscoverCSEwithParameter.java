@@ -33,7 +33,7 @@ public class DiscoverCSEwithParameter implements Handler<ActionResult> {
         }
 
         //Can we print out the error information to the customer/dglux?
-        //cse.customeDiscover(sb.toString());
+        cse.discoverRoot();
         String cseName = node.getName();
         String lastCon = cse.getResponseJsonString(cseName + sb.toString());
         event.getTable().addRow(Row.make(new Value(lastCon)));

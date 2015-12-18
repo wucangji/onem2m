@@ -1,5 +1,4 @@
 package org.dsa.iot.onem2m.server;
-import org.codehaus.jettison.json.JSONObject;
 import org.dsa.iot.dslink.node.actions.table.Row;
 import org.dsa.iot.onem2m.actions.cse.DiscoverCSEwithParameter;
 import org.dsa.iot.onem2m.actions.resource.*;
@@ -24,14 +23,13 @@ import org.dsa.iot.dslink.util.handler.Handler;
 //import org.vertx.java.core.json.JsonObject;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
-import java.awt.*;
+
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Samuel Grenier
@@ -62,7 +60,7 @@ public class BaseCSE {
         }
         {
             NodeBuilder b = parent.createChild("discover");
-            b.setDisplayName("Refresh");
+            b.setDisplayName("OneM2M Sync Up");
             b.setSerializable(false);
             b.setAction(DiscoverCSE.make());
             b.build();
@@ -138,29 +136,15 @@ public class BaseCSE {
         Objects.getDaemonThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                buildTree(path + "?fu=1&rcn=5");
-            }
-        });
-    }
-
-
-    public void customeDiscover(final String parameter) {
-        Objects.getDaemonThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                Map<String, Node> children = parent.getChildren();
-                if (children != null) {
-                    for (Node node : children.values()) {
-                        if (node.getAction() == null) {
-                            parent.removeChild(node);
-                        }
-                    }
+                if (path.contains("?")) {
+                    buildTree(path);
+                } else {
+                    buildTree(path + "?fu=1&rcn=5");
                 }
-                //final String para = parameter;
-                buildTree(parent.getName() + "?fu=1&rcn=5" + parameter);
             }
         });
     }
+
 
     private void buildTree(String to) {
         RequestPrimitive primitive = new RequestPrimitive();
@@ -337,6 +321,10 @@ public class BaseCSE {
         } else if (ty == 2) {
             // if this resource is an AE
             createFunctionForAE(node, payload);
+        } else if (ty == 4) {
+            String cinURI = payload.get("val");
+            String parentURI = cinURI.substring(0, cinURI.lastIndexOf("/"));
+            createLatestNode(node.getParent(), parentURI);
         }
     }
 
@@ -363,7 +351,8 @@ public class BaseCSE {
     public void createFunctionForContainer(Node node, final JsonObject payload) {
         // if this resource is a container.
         NodeBuilder b = node.createFakeBuilder();// what does this node builder do ?
-        b = node.createChild("Get Latest");
+        b = node.createChild("GetLatest");
+        b.setDisplayName("Get Latest");
         b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
             @Override
             public void handle(ActionResult event) {
@@ -385,40 +374,20 @@ public class BaseCSE {
         }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest Cin", ValueType.STRING)));
         b.build();
 
-//        b = node.createChild("Get Latest createTime");
-//        b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
-//            @Override
-//            public void handle(ActionResult event) {
-//                String latestURI = payload.get("val") + "/latest";
-//                System.out.println("latestURI" + latestURI);
-//
-//                NodeBuilder latest = event.getNode().getParent().createChild("Latest ContentInstance");
-//                latest.setSerializable(false);
-//                latest.setValueType(ValueType.DYNAMIC);
-//                Node latestNode1 = latest.build();
-//                buildTreeForThisNode(latestURI, latestNode1);
-//
-//                // todo: remove this build can remove the update of the Container node.
-//                System.out.println("lst : " + latestNode1.getChild("ct").getValue().toString());
-//                String lastCon = latestNode1.getChild("ct").getValue().toString();
-//                event.getTable().addRow(Row.make(new Value(lastCon)));
-//            }
-//        }).addResult(new org.dsa.iot.dslink.node.actions.Parameter("Latest", ValueType.STRING)));
-//        b.build();
-
-        b = node.createChild("Get Self");
-        b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
-            @Override
-            public void handle(ActionResult event) {
-                String latestURI = payload.get("val");
-                System.out.println("latestURI" + latestURI);
-                Node selfNode = event.getNode().getParent().getChild("val");
-                selfNode.clearChildren();
-                buildTreeForThisNode(latestURI, selfNode);
-            }
-        }));
-        b.build();
-
+        {
+            b = node.createChild("GetSelf");
+            b.setDisplayName("Get Self");
+            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+                @Override
+                public void handle(ActionResult event) {
+                    String selfURI = payload.get("val");
+                    Node selfNode = event.getNode().getParent().getChild("val");
+                    selfNode.clearChildren();
+                    buildTreeForThisNode(selfURI, selfNode);
+                }
+            }));
+            b.build();
+        }
         {
             b = node.createChild("AddContainer");
             b.setDisplayName("Add Container");
@@ -427,7 +396,7 @@ public class BaseCSE {
             b.build();
         }
         {
-            b = node.createChild("Add ContentInstance");
+            b = node.createChild("AddContentInstance");
             b.setDisplayName("Add ContentInstance");
             b.setSerializable(false);
             b.setAction(AddContentInstance.make(this));
@@ -447,32 +416,24 @@ public class BaseCSE {
             b.setAction(DiscoverwithParameter.make(this));
             b.build();
         }
+
         {
-
-            String latestURI = payload.get("val") + "/latest";
-            String result = getResponseJsonString(latestURI);
-            if (!result.contains("error")) {
-                NodeBuilder latest = node.createChild("Latest ContentInstance");
-                latest.setSerializable(false);
-                latest.setValueType(ValueType.DYNAMIC);
-                Node latestNode = latest.build();
-                buildTreeForThisNode(latestURI, latestNode);
-            }
+            b = node.createChild("Onem2mSyncUp");
+            b.setDisplayName("OneM2M_Sync_Up");
+            b.setSerializable(false);
+            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+                @Override
+                public void handle(ActionResult event) {
+                    Node parent = event.getNode().getParent();
+                    cleanTheNodeChild(parent);
+                    String selfURI = payload.get("val");
+                    discoverThisUri(selfURI + "?fu=1&rcn=5");
+                }
+            }));
+            b.build();
         }
     }
 
-    public void createLatestNode(Node node, String containerURI) {
-
-        String latestURI = containerURI + "/latest";
-        String result = getResponseJsonString(latestURI);
-        if (!result.contains("error")) {
-            NodeBuilder latest = node.createChild("Latest ContentInstance");
-            latest.setSerializable(false);
-            latest.setValueType(ValueType.DYNAMIC);
-            Node latestNode = latest.build();
-            buildTreeForThisNode(latestURI, latestNode);
-        }
-    }
 
     public void createFunctionForAE(Node node, final JsonObject payload) {
         // if this resource is a container.
@@ -510,6 +471,21 @@ public class BaseCSE {
             b.setDisplayName("Discover");
             b.setSerializable(false);
             b.setAction(DiscoverwithParameter.make(this));
+            b.build();
+        }
+        {
+            b = node.createChild("Onem2mSyncUp");
+            b.setDisplayName("OneM2M_Sync_Up");
+            b.setSerializable(false);
+            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+                @Override
+                public void handle(ActionResult event) {
+                    Node parent = event.getNode().getParent();
+                    cleanTheNodeChild(parent);
+                    String selfURI = payload.get("val");
+                    discoverThisUri(selfURI + "?fu=1&rcn=5");
+                }
+            }));
             b.build();
         }
     }
@@ -643,4 +619,27 @@ public class BaseCSE {
         return exchange.getResponsePrimitive().getResponseStatusCode().toString();
     }
 
+
+    public void cleanTheNodeChild(Node parent) {
+
+        Map<String, Node> children = parent.getChildren();
+        if (children != null) {
+            for (Node node1 : children.values()) {
+                if (node1.getAction() == null && !(node1.getName().equalsIgnoreCase("val") || node1.getName().equalsIgnoreCase("typ") || node1.getName().equalsIgnoreCase("nm"))) {
+                    parent.removeChild(node1);
+                }
+            }
+        }
+
+    }
+
+    public void createLatestNode(Node node, String containerURI) {
+
+        String latestURI = containerURI + "/latest";
+        NodeBuilder latest = node.createChild("Latest ContentInstance");
+        latest.setSerializable(false);
+        latest.setValueType(ValueType.DYNAMIC);
+        Node latestNode = latest.build();
+        buildTreeForThisNode(latestURI, latestNode);
+    }
 }
