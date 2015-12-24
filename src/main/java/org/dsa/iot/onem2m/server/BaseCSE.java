@@ -502,7 +502,14 @@ public class BaseCSE {
             String name = entry.getKey();
             // todo: map name to full name
             Value value = ValueUtils.toValue(entry.getValue());
-
+            if (name.equalsIgnoreCase("con")) {
+                JsonObject conjson= new JsonObject(value.toString());
+                NodeBuilder nameNode = node.createChild(name);
+                nameNode.setSerializable(false);
+                nameNode.setValueType(ValueType.DYNAMIC);
+                Node nNode = nameNode.build();
+                handleTreeFields(conjson, nNode);
+            }
             Node n = node.getChild(name);
             NodeBuilder b;
             if (n == null) {
