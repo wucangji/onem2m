@@ -502,7 +502,8 @@ public class BaseCSE {
             String name = entry.getKey();
             // todo: map name to full name
             Value value = ValueUtils.toValue(entry.getValue());
-            if (name.equalsIgnoreCase("con")) {
+//            if (name.equalsIgnoreCase("con")) {
+            if (value.toString().contains("{")) {
                 JsonObject conjson= new JsonObject(value.toString());
                 NodeBuilder nameNode = node.createChild(name);
                 nameNode.setSerializable(false);
@@ -643,9 +644,9 @@ public class BaseCSE {
     public void createLatestNode(Node node, String containerURI) {
 
         String latestURI = containerURI + "/latest";
-        NodeBuilder latest = node.createChild("Latest ContentInstance");
+        NodeBuilder latest = node.createChild("LatestContentInstance");
         latest.setSerializable(false);
-        latest.setValueType(ValueType.DYNAMIC);
+        //latest.setValueType(ValueType.DYNAMIC);
         Node latestNode = latest.build();
         buildTreeForThisNode(latestURI, latestNode);
     }
