@@ -31,11 +31,7 @@ public class DeleteResource implements Handler<ActionResult> {
         Node valNode = node.getChild("val");
         String TargetContainerURI = valNode.getValue().toString();
         String ret = null;
-        if (valNode != null) {
-            ret = cse.deleteResource(TargetContainerURI);
-        } else {
-            ret = "Failed to delete";
-        }
+        ret = cse.deleteResource(TargetContainerURI);
         Node parent = node.getParent();
         String parentPath = TargetContainerURI.substring(0, TargetContainerURI.lastIndexOf("/"));
         Map<String, Node> children = parent.getChildren();
