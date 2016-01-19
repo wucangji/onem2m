@@ -181,6 +181,18 @@ public class BaseCSE {
         Exchange exchange = server.createExchange(primitive);
         handleResponseForThisNode(send(exchange), node);
     }
+
+    private void buildTreeForLatest(String to, Node node) {
+        RequestPrimitive primitive = new RequestPrimitive();
+        primitive.setOperation(OneM2M.Operation.RETRIEVE.value());
+        primitive.setFrom("dslink");
+        primitive.setTo(to);
+        primitive.setRequestIdentifier("12345");
+
+        Exchange exchange = server.createExchange(primitive);
+        handleResponseForLatest(send(exchange), node);
+    }
+
     private synchronized String send(Exchange exchange) {
         Http http = new Http();
         http.start();
@@ -202,6 +214,25 @@ public class BaseCSE {
                 String key = (String)array[0];
                 Object realPayload = responseJson.get(key);
                 handlePayloadForThisNode((JsonObject)realPayload, node);
+            }
+        } else {
+            String clazz = object.getClass().getName();
+            throw new RuntimeException("Unsupported instance: " + clazz);
+        }
+    }
+
+    private void handleResponseForLatest(String response, Node node) {
+        JsonObject json = new JsonObject(response);
+        Object object = json.get("responsePayload");
+        //System.out.println("response this node:" + object.toString());
+        if (object instanceof JsonObject) {
+            JsonObject responseJson = (JsonObject) object;
+            //System.out.println("FiledName:" + responseJson.getFieldNames().toString());
+            Object[] array = responseJson.getMap().keySet().toArray();
+            if (array != null) {
+                String key = (String)array[0];
+                Object realPayload = responseJson.get(key);
+                handlePayloadForLatest((JsonObject) realPayload, node);
             }
         } else {
             String clazz = object.getClass().getName();
@@ -241,6 +272,22 @@ public class BaseCSE {
         }
 
         handleTreeFields(payload, node);
+
+    }
+
+    private void handlePayloadForLatest(final JsonObject payload, Node node) {
+        if (payload == null) {
+            return;
+        }
+        //todo: may not contain rn, for example, error
+        String rn = payload.get("rn");
+
+        System.out.println("rn1:" + rn);
+        if (rn == null) {
+            return;
+        }
+
+        handleTreeFieldsForLatest(payload, node);
 
     }
 
@@ -526,6 +573,42 @@ public class BaseCSE {
         }
     }
 
+
+    private void handleTreeFieldsForLatest(final JsonObject obj,
+                                  final Node node) {
+        if (obj == null) {
+            return;
+        }
+
+        //node.clearChildren();
+        Map<String, Object> map = obj.getMap();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String name = entry.getKey();
+            // todo: map name to full name
+            Value value = ValueUtils.toValue(entry.getValue());
+//            if (name.equalsIgnoreCase("con")) {
+            if (value.toString().contains("{")) {
+                JsonObject conjson= new JsonObject(value.toString());
+                NodeBuilder nameNode = node.createChild(name);
+                nameNode.setSerializable(false);
+                Node nNode = nameNode.build();
+                handleTreeFieldsForLatest(conjson, nNode);
+            }
+            Node n = node.getChild(name);
+            NodeBuilder b;
+            if (n == null) {
+                b = node.createChild(name);
+                b.setSerializable(false);
+                b.setValueType(ValueType.DYNAMIC);
+            } else {
+                b = n.createFakeBuilder();
+            }
+            n = b.build();
+            n.setValueType(ValueType.DYNAMIC);
+            n.setValue(value);
+        }
+    }
+
     public static void init(Node parent) {
         OneM2MServer server = parent.getParent().getMetaData();
         BaseCSE cse = new BaseCSE(server, parent);
@@ -643,11 +726,11 @@ public class BaseCSE {
 
     public void createLatestNode(Node node, String containerURI) {
 
-        String latestURI = containerURI + "/latest";
+        String latestURI = containerURI + "/la";
         NodeBuilder latest = node.createChild("LatestContentInstance");
         latest.setSerializable(false);
         //latest.setValueType(ValueType.DYNAMIC);
         Node latestNode = latest.build();
-        buildTreeForThisNode(latestURI, latestNode);
+        buildTreeForLatest(latestURI, latestNode);
     }
 }
