@@ -325,6 +325,8 @@ public class BaseCSE {
             String cinURI = payload.get("val");
             String parentURI = cinURI.substring(0, cinURI.lastIndexOf("/"));
             createLatestNode(node.getParent(), parentURI);
+        } else if (ty == 23) {
+            createFunctionForSubscription(node, payload);
         }
     }
 
@@ -344,6 +346,13 @@ public class BaseCSE {
             b.setDisplayName("Add an AE");
             b.setSerializable(false);
             b.setAction(AddContainer.make(this));
+            b.build();
+        }
+        {
+            b = node.createChild("AddSubscription");
+            b.setDisplayName("Add Subscription");
+            b.setSerializable(false);
+            b.setAction(AddSubscription.make(this));
             b.build();
         }
     }
@@ -400,6 +409,13 @@ public class BaseCSE {
             b.setDisplayName("Add ContentInstance");
             b.setSerializable(false);
             b.setAction(AddContentInstance.make(this));
+            b.build();
+        }
+        {
+            b = node.createChild("AddSubscription");
+            b.setDisplayName("Add Subscription");
+            b.setSerializable(false);
+            b.setAction(AddSubscription.make(this));
             b.build();
         }
         {
@@ -460,6 +476,13 @@ public class BaseCSE {
             b.build();
         }
         {
+            b = node.createChild("AddSubscription");
+            b.setDisplayName("Add Subscription");
+            b.setSerializable(false);
+            b.setAction(AddSubscription.make(this));
+            b.build();
+        }
+        {
             b = node.createChild("DeleteSelf");
             b.setDisplayName("Delete Self");
             b.setSerializable(false);
@@ -489,6 +512,58 @@ public class BaseCSE {
             b.build();
         }
     }
+
+
+
+    public void createFunctionForSubscription(Node node, final JsonObject payload) {
+        // if this resource is a subscription.
+        NodeBuilder b = node.createFakeBuilder();
+        {
+            b = node.createChild("GetSelf");
+            b.setDisplayName("Get Self");
+            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+                @Override
+                public void handle(ActionResult event) {
+                    String selfURI = payload.get("val");
+                    Node selfNode = event.getNode().getParent().getChild("val");
+                    selfNode.clearChildren();
+                    buildTreeForThisNode(selfURI, selfNode);
+                }
+            }));
+            b.build();
+        }
+        {
+            b = node.createChild("DeleteSelf");
+            b.setDisplayName("Delete Self");
+            b.setSerializable(false);
+            b.setAction(DeleteResource.make(this));
+            b.build();
+        }
+        {
+            b = node.createChild("Discover");
+            b.setDisplayName("Discover");
+            b.setSerializable(false);
+            b.setAction(DiscoverwithParameter.make(this));
+            b.build();
+        }
+
+        {
+            b = node.createChild("Onem2mSyncUp");
+            b.setDisplayName("OneM2M_Sync_Up");
+            b.setSerializable(false);
+            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+                @Override
+                public void handle(ActionResult event) {
+                    Node parent = event.getNode().getParent();
+                    cleanTheNodeChild(parent);
+                    String selfURI = payload.get("val");
+                    discoverThisUri(selfURI + "?fu=1&rcn=5");
+                }
+            }));
+            b.build();
+        }
+    }
+
 
     private void handleTreeFields(final JsonObject obj,
                                   final Node node) {
@@ -582,26 +657,7 @@ public class BaseCSE {
         return exchange.getResponsePrimitive().getResponseStatusCode().toString();
     }
 
-    public String deleteResource (String to) {
-        RequestPrimitive primitive = new RequestPrimitive();
-        primitive.setOperation(OneM2M.Operation.DELETE.value());
-        primitive.setFrom("dslink");
-        primitive.setTo(to);
-        primitive.setRequestIdentifier("12345");
 
-        Exchange exchange = server.createExchange(primitive);
-        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
-        // How to see them in the metrics?
-
-        Http http=new Http();
-        http.start();
-        http.send(exchange);
-        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
-        http.stop();
-
-        System.out.println(exchange.toString());
-        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
-    }
 
     public String createAEwithName (String to, String name, String aepayload) {
         RequestPrimitive primitive = new RequestPrimitive();
@@ -627,6 +683,53 @@ public class BaseCSE {
         return exchange.getResponsePrimitive().getResponseStatusCode().toString();
     }
 
+
+    public String createSubsciptionwithName (String to, String name, String subspayload) {
+        RequestPrimitive primitive = new RequestPrimitive();
+        primitive.setOperation(OneM2M.Operation.CREATE.value());
+        primitive.setFrom("dslink");
+        primitive.setTo(to);
+        primitive.setRequestIdentifier("12345");
+        primitive.setName(name);
+        primitive.setStringpayload(subspayload);
+
+        Exchange exchange = server.createExchange(primitive);
+        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+        // How to see them in the metrics?
+
+        Http http=new Http();
+        http.start();
+        http.setContentType(OneM2M.ResourceType.SUBSCRIPTION.value());
+        http.send(exchange);
+        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
+        http.stop();
+
+        System.out.println(exchange.toString());
+
+        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+    }
+
+
+    public String deleteResource (String to) {
+        RequestPrimitive primitive = new RequestPrimitive();
+        primitive.setOperation(OneM2M.Operation.DELETE.value());
+        primitive.setFrom("dslink");
+        primitive.setTo(to);
+        primitive.setRequestIdentifier("12345");
+
+        Exchange exchange = server.createExchange(primitive);
+        //handleResponse(send(exchange));   // can we see the reponse in a seperate place, not in some node?
+        // How to see them in the metrics?
+
+        Http http=new Http();
+        http.start();
+        http.send(exchange);
+        //http.cleanContentType(); // This clean step is import, otherwise the ty=5 will added to all the other operation
+        http.stop();
+
+        System.out.println(exchange.toString());
+        return exchange.getResponsePrimitive().getResponseStatusCode().toString();
+    }
 
     public void cleanTheNodeChild(Node parent) {
 

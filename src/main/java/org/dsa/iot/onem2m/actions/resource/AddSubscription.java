@@ -8,21 +8,18 @@ import org.dsa.iot.dslink.node.actions.Parameter;
 import org.dsa.iot.dslink.node.actions.table.Row;
 import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.node.value.ValueType;
-import org.dsa.iot.onem2m.server.BaseCSE;
-import org.opendaylight.iotdm.primitive.Cnt;
 import org.dsa.iot.dslink.util.handler.Handler;
-
-import java.io.IOException;
-import java.math.BigInteger;
+import org.dsa.iot.onem2m.server.BaseCSE;
 
 /**
- * Created by canwu on 9/14/15.
+ * Created by canwu on 1/26/16.
  */
-public class AddContainer implements Handler<ActionResult> {
+public class AddSubscription implements Handler<ActionResult> {
 
+    // default notification type:  wholeresource
     private final BaseCSE cse;
 
-    private AddContainer(BaseCSE cse) {
+    private AddSubscription(BaseCSE cse) {
         this.cse = cse;
     }
     @Override
@@ -34,34 +31,28 @@ public class AddContainer implements Handler<ActionResult> {
         String ret = null;
         //Cnt cnt = new Cnt();
         StringBuilder sb = new StringBuilder();
-        sb.append("{\"m2m:cnt\":{");
+        sb.append("{\"m2m:sub\":{");
         int state = 0;
-        if (event.getParameter("MaxNrOfInstances") != null) {
-            String mnivalue = event.getParameter("MaxNrOfInstances", ValueType.NUMBER).toString();
-            if (state != 0) {
-                sb.append(",");
-            }
-            sb.append("\"mni\":" + mnivalue );
+        if (event.getParameter("NotificationURI") != null) {
+            String nu = event.getParameter("NotificationURI", ValueType.ARRAY).getString();
+            //todo cnt.setlbl();  ???
+            System.out.println("nu: " + nu);
+            sb.append("\"nu\":" + nu);
             state++;
-            //cnt.setMni(BigInteger.valueOf(mnivalue));
         }
-        if (event.getParameter("MaxByteSize") != null) {
+        if (event.getParameter("SubscriberURI") != null) {
             if (state != 0) {
                 sb.append(",");
             }
-            String mbsvalue = event.getParameter("MaxByteSize", ValueType.NUMBER).getNumber().toString();
-            sb.append("\"mbs\":" + mbsvalue );
+            String su = event.getParameter("SubscriberURI", ValueType.STRING).getString();
+            sb.append("\"su\":" + su );
             state++;
-            //cnt.setMbs(BigInteger.valueOf(mbsvalue));
         }
         if (event.getParameter("Labels") != null) {
             if (state != 0) {
                 sb.append(",");
             }
             String lbl = event.getParameter("Labels", ValueType.ARRAY).getString();
-            //sb.append(",\"apn\":" + "\"" + apnvalue + "\"");
-            //todo cnt.setlbl();  ???
-            System.out.println("lbl: " + lbl);
             sb.append("\"lbl\":" + lbl);
             state++;
         }
@@ -72,63 +63,43 @@ public class AddContainer implements Handler<ActionResult> {
             String expirationTime = event.getParameter("ExpirationTime", ValueType.STRING).getString();
             sb.append("\"et\":" + "\"" + expirationTime + "\"");
             state++;
-            //cnt.setEt(expirationTime);
         }
         sb.append("}}");
-        String cntpayload = sb.toString();
-//        ObjectMapper mapper = new ObjectMapper();
-//        String JsonString = "";
-//        try {
-//            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-//            mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-//            JsonString = mapper.writeValueAsString(cnt);
-//
-//        }catch (JsonParseException e) {
-//            e.printStackTrace();
-//        } catch (JsonMappingException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        String cntpayload = "{\"m2m:cnt\":" + JsonString + "}";
-        System.out.println("Container Json String: " + cntpayload);
+        String subspayload = sb.toString();
+        System.out.println("Subscription Json String: " + subspayload);
         String TargetContainerURI = "";
         if (valNode != null) {
             TargetContainerURI = valNode.getValue().toString();
         } else if (node.getChild("ty").getValue().toString().compareTo("5") == 0) {
             TargetContainerURI = node.getChild("rn").getValue().toString();
-//            String Name = event.getParameter("Name", ValueType.STRING).getString();
-//            ret = cse.createContainerwithName(TargetContainerURI, Name, cntpayload);
-//            cse.discoverThisUri(TargetContainerURI);
         }
 
         String Name = event.getParameter("Name", ValueType.STRING).getString();
-        ret = cse.createContainerwithName(TargetContainerURI, Name, cntpayload);
+        ret = cse.createSubsciptionwithName(TargetContainerURI, Name, subspayload);
         cse.discoverThisUri(TargetContainerURI);
 
         if (ret == null) {
-            ret = "Failed to add Container";
+            ret = "Failed to add Subscription";
         }
 
         event.getTable().addRow(Row.make(new Value(ret)));
     }
 
     public static Action make(BaseCSE cse) {
-        Action act = new Action(Permission.WRITE, new AddContainer(cse));
+        Action act = new Action(Permission.WRITE, new AddSubscription(cse));
         {
             Parameter p = new Parameter("Name", ValueType.STRING);
             p.setPlaceHolder("type a name here");
             act.addParameter(p);
         }
         {
-            Parameter p = new Parameter("MaxNrOfInstances", ValueType.STRING);
-            p.setPlaceHolder("type a Integer here");
+            Parameter p = new Parameter("NotificationURI", ValueType.STRING);
+            p.setPlaceHolder("type a List here");
             act.addParameter(p);
         }
         {
-            Parameter p = new Parameter("MaxByteSize", ValueType.STRING);
-            p.setPlaceHolder("type a Integer here");
+            Parameter p = new Parameter("SubscriberURI", ValueType.STRING);
+            p.setPlaceHolder("type a String here");
             act.addParameter(p);
         }
         {
