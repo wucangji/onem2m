@@ -2,6 +2,7 @@
   "name": "dslink-java-onem2m",
   "version": "0.0.1",
   "description": "An integration for oneM2M.",
+  "main": "bin/dslink-java-onem2m",
   "configs": {
     "name": {
       "type": "string",
