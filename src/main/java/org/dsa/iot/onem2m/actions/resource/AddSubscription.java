@@ -64,6 +64,14 @@ public class AddSubscription implements Handler<ActionResult> {
             sb.append("\"et\":" + "\"" + expirationTime + "\"");
             state++;
         }
+        if (event.getParameter("Name") != null) {
+            if (state != 0) {
+                sb.append(",");
+            }
+            String name = event.getParameter("Name", ValueType.STRING).getString();
+            sb.append("\"rn\":" + "\"" + name + "\"");
+            state++;
+        }
         sb.append("}}");
         String subspayload = sb.toString();
         System.out.println("Subscription Json String: " + subspayload);
@@ -74,8 +82,7 @@ public class AddSubscription implements Handler<ActionResult> {
             TargetContainerURI = node.getChild("rn").getValue().toString();
         }
 
-        String Name = event.getParameter("Name", ValueType.STRING).getString();
-        ret = cse.createSubsciptionwithName(TargetContainerURI, Name, subspayload);
+        ret = cse.createSubsciption(TargetContainerURI, subspayload);
         cse.discoverThisUri(TargetContainerURI);
 
         if (ret == null) {

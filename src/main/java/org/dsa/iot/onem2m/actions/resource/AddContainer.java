@@ -74,6 +74,14 @@ public class AddContainer implements Handler<ActionResult> {
             state++;
             //cnt.setEt(expirationTime);
         }
+        if (event.getParameter("Name") != null) {
+            if (state != 0) {
+                sb.append(",");
+            }
+            String name = event.getParameter("Name", ValueType.STRING).getString();
+            sb.append("\"rn\":" + "\"" + name + "\"");
+            state++;
+        }
         sb.append("}}");
         String cntpayload = sb.toString();
 //        ObjectMapper mapper = new ObjectMapper();
@@ -103,8 +111,7 @@ public class AddContainer implements Handler<ActionResult> {
 //            cse.discoverThisUri(TargetContainerURI);
         }
 
-        String Name = event.getParameter("Name", ValueType.STRING).getString();
-        ret = cse.createContainerwithName(TargetContainerURI, Name, cntpayload);
+        ret = cse.createContainer(TargetContainerURI, cntpayload);
         cse.discoverThisUri(TargetContainerURI);
 
         if (ret == null) {

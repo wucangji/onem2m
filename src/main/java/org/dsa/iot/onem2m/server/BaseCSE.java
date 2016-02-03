@@ -92,16 +92,6 @@ public class BaseCSE {
         //addSystemMemoryToCSE(); // if use multithread, then will have address already use problem.
     }
 
-    public void addSystemMemoryToCSE() {
-        Objects.getDaemonThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                // Create the container to store the memory information
-                createContainerwithName(parent.getName(), "MemContainer", "");
-                addMemConInToCnt();
-            }
-        });
-    }
 
     private void addMemConInToCnt() {
         while (true) {
@@ -632,13 +622,12 @@ public class BaseCSE {
         return exchange.getResponsePrimitive().getResponseStatusCode().toString();
     }
 
-    public String createContainerwithName (String to, String name, String containerpayload) {
+    public String createContainer (String to, String containerpayload) {
         RequestPrimitive primitive = new RequestPrimitive();
         primitive.setOperation(OneM2M.Operation.CREATE.value());
         primitive.setFrom("dslink");
         primitive.setTo(to);
         primitive.setRequestIdentifier("12345");
-        primitive.setName(name);
         primitive.setStringpayload(containerpayload);
 
         Exchange exchange = server.createExchange(primitive);
@@ -659,13 +648,12 @@ public class BaseCSE {
 
 
 
-    public String createAEwithName (String to, String name, String aepayload) {
+    public String createAE (String to, String aepayload) {
         RequestPrimitive primitive = new RequestPrimitive();
         primitive.setOperation(OneM2M.Operation.CREATE.value());
         primitive.setFrom("dslink");
         primitive.setTo(to);
         primitive.setRequestIdentifier("12345");
-        primitive.setName(name);
         primitive.setStringpayload(aepayload);
 
         Exchange exchange = server.createExchange(primitive);
@@ -684,13 +672,12 @@ public class BaseCSE {
     }
 
 
-    public String createSubsciptionwithName (String to, String name, String subspayload) {
+    public String createSubsciption (String to, String subspayload) {
         RequestPrimitive primitive = new RequestPrimitive();
         primitive.setOperation(OneM2M.Operation.CREATE.value());
         primitive.setFrom("dslink");
         primitive.setTo(to);
         primitive.setRequestIdentifier("12345");
-        primitive.setName(name);
         primitive.setStringpayload(subspayload);
 
         Exchange exchange = server.createExchange(primitive);

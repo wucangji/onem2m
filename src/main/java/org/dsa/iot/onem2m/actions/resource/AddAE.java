@@ -49,11 +49,14 @@ public class AddAE  implements Handler<ActionResult> {
             String nlvalue = event.getParameter("NodeLink", ValueType.STRING).getString();
             sb.append(",\"nl\":" + "\"" + nlvalue + "\"");
         }
+        if (event.getParameter("Name") != null) {
+            String name = event.getParameter("Name", ValueType.STRING).getString();
+            sb.append(",\"rn\":" + "\"" + name + "\"");
+        }
         sb.append("}}");
         if (valNode.getValue().toString().compareTo("5") == 0) {
             String TargetContainerURI = node.getChild("rn").getValue().toString();
-            String Name = event.getParameter("Name", ValueType.STRING).getString();
-            ret = cse.createAEwithName(TargetContainerURI, Name, sb.toString());
+            ret = cse.createAE(TargetContainerURI, sb.toString());
             cse.discoverRoot();
         }
 
