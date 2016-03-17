@@ -72,6 +72,18 @@ public class AddSubscription implements Handler<ActionResult> {
             sb.append("\"rn\":" + "\"" + name + "\"");
             state++;
         }
+        if (event.getParameter("NotificationEventCriteria") != null) {
+            if (state != 0) {
+                sb.append(",");
+            }
+            String enc = event.getParameter("NotificationEventCriteria", ValueType.STRING).getString();
+            sb.append("\"enc\":" +  enc );
+            state++;
+        }
+
+        // set notification content type to URI
+        sb.append(",\"nct\":" + 3 );
+
         sb.append("}}");
         String subspayload = sb.toString();
         System.out.println("Subscription Json String: " + subspayload);
@@ -97,6 +109,11 @@ public class AddSubscription implements Handler<ActionResult> {
         {
             Parameter p = new Parameter("Name", ValueType.STRING);
             p.setPlaceHolder("type a name here");
+            act.addParameter(p);
+        }
+        {
+            Parameter p = new Parameter("NotificationEventCriteria", ValueType.STRING);
+            p.setPlaceHolder("type a Object String here");
             act.addParameter(p);
         }
         {

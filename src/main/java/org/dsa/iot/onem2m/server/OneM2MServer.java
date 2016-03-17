@@ -1,13 +1,24 @@
 package org.dsa.iot.onem2m.server;
 
+import org.apache.commons.io.IOUtils;
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.NodeBuilder;
+import org.dsa.iot.dslink.util.json.JsonObject;
 import org.dsa.iot.onem2m.actions.cse.AddCSE;
 import org.dsa.iot.onem2m.actions.server.DeleteServer;
 import org.dsa.iot.onem2m.actions.server.EditServer;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.opendaylight.iotdm.client.Exchange;
 import org.opendaylight.iotdm.primitive.RequestPrimitive;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,8 +35,8 @@ public class OneM2MServer {
         this.parent = parent;
     }
 
-    public void addCSE(String cse) {
-        NodeBuilder b = parent.createChild(cse);
+    public void addCSE(String cseName) {
+        NodeBuilder b = parent.createChild(cseName);
         BaseCSE.init(b.build());
     }
 

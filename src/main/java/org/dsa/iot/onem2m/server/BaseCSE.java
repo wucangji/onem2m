@@ -40,6 +40,7 @@ public class BaseCSE {
     private final OneM2MServer server;
     private final Node parent; // parent is the CSENode
 
+
     private BaseCSE(OneM2MServer server, Node parent) {
         if (server == null) {
             throw new NullPointerException("server");
@@ -84,6 +85,13 @@ public class BaseCSE {
             b.setDisplayName("Add an AE");
             b.setSerializable(false);
             b.setAction(AddAE.make(this));
+            b.build();
+        }
+        {
+            NodeBuilder b = parent.createChild("addSubscription");
+            b.setDisplayName("Add Subscription");
+            b.setSerializable(false);
+            b.setAction(AddSubscription.make(this));
             b.build();
         }
         // Perform an initial discovery
@@ -312,6 +320,7 @@ public class BaseCSE {
             // if this resource is an AE
             createFunctionForAE(node, payload);
         } else if (ty == 4) {
+            createFunctionForCin(node, payload);
             String cinURI = payload.get("val");
             String parentURI = cinURI.substring(0, cinURI.lastIndexOf("/"));
             createLatestNode(node.getParent(), parentURI);
@@ -555,6 +564,32 @@ public class BaseCSE {
     }
 
 
+    public void createFunctionForCin(Node node, final JsonObject payload) {
+        // if this resource is a subscription.
+        NodeBuilder b = node.createFakeBuilder();
+        {
+            b = node.createChild("GetSelf");
+            b.setDisplayName("Get Self");
+            b.setAction(new Action(Permission.READ, new Handler<ActionResult>() {
+                @Override
+                public void handle(ActionResult event) {
+                    String selfURI = payload.get("val");
+                    Node selfNode = event.getNode().getParent().getChild("val");
+                    selfNode.clearChildren();
+                    buildTreeForThisNode(selfURI, selfNode);
+                }
+            }));
+            b.build();
+        }
+        {
+            b = node.createChild("DeleteSelf");
+            b.setDisplayName("Delete Self");
+            b.setSerializable(false);
+            b.setAction(DeleteResource.make(this));
+            b.build();
+        }
+    }
+
     private void handleTreeFields(final JsonObject obj,
                                   final Node node) {
         if (obj == null) {
@@ -591,13 +626,13 @@ public class BaseCSE {
         }
     }
 
-    public static void init(Node parent) {
+    public static BaseCSE init(Node parent) {
         OneM2MServer server = parent.getParent().getMetaData();
         BaseCSE cse = new BaseCSE(server, parent);
         parent.setMetaData(cse);
         cse.init();
+        return cse;
     }
-
 
     public String createContentInstanceWithCon (String to, String con) {
         RequestPrimitive primitive = new RequestPrimitive();
