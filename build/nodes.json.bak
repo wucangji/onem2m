@@ -1,0 +1,22 @@
+{
+  "local" : {
+    "$is" : "node",
+    "$$port" : 8282,
+    "$$host" : "127.0.0.1",
+    "InCSE1" : {
+      "$is" : "node"
+    }
+  },
+  "InCSE1" : {
+    "$is" : "node",
+    "lay1" : {
+      "$is" : "node",
+      "k" : {
+        "$is" : "node"
+      },
+      "l" : {
+        "$is" : "node"
+      }
+    }
+  }
+}
