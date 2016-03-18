@@ -6,7 +6,7 @@ Integration for onem2m systems.
 
 1. Run `./gradlew build distZip`
 2. Navigate into `build/distributions`
-3. Extract the distribution tarball/zip
+3. Extract the distribution tar/zip
 4. Navigate into the extracted distribution
 5. Run `./bin/dslink-java-onem2m -b http://localhost:8080/conn`
 
