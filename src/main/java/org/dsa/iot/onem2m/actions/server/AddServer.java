@@ -57,7 +57,7 @@ public class AddServer implements Handler<ActionResult> {
         }
         {
             Parameter p = new Parameter("Port", ValueType.NUMBER);
-            p.setDefaultValue(new Value(8888));
+            p.setDefaultValue(new Value(8282));
             act.addParameter(p);
         }
         return act;
